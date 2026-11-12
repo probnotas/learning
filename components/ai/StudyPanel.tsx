@@ -136,7 +136,7 @@ function Notes({
         <button
           onClick={check}
           disabled={!aiEnabled || busy || !text.trim()}
-          title={aiEnabled ? "Have the AI compare your notes with the video and lesson" : "Set ANTHROPIC_API_KEY to enable"}
+          title={aiEnabled ? "Have the AI compare your notes with the video and lesson" : "Set GROQ_API_KEY to enable"}
           className="ml-auto rounded-full bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 hover:bg-ink-700 disabled:opacity-40"
         >
           {busy ? "Checking…" : "✦ Check my notes"}
@@ -194,7 +194,7 @@ function Ask({
   if (!aiEnabled) {
     return (
       <div className="p-6 text-sm text-ink-300">
-        Ask AI needs an API key. Set <code className="font-mono">ANTHROPIC_API_KEY</code> (see README → AI features) and restart the app.
+        Ask AI needs an API key. Set <code className="font-mono">GROQ_API_KEY</code> (see README → AI features) and restart the app.
       </div>
     );
   }

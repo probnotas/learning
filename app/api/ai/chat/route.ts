@@ -1,5 +1,5 @@
-import type Anthropic from "@anthropic-ai/sdk";
-import { BETAS, checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock } from "@/lib/ai-server";
+import type Groq from "groq-sdk";
+import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const denied = checkAccess(req);
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
-  const history: Anthropic.Beta.BetaMessageParam[] = (Array.isArray(body.messages) ? body.messages : [])
+  const history: Groq.Chat.ChatCompletionMessageParam[] = (Array.isArray(body.messages) ? body.messages : [])
     .slice(-LIMITS.history)
     .filter((m: { role?: string; content?: unknown }) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
     .map((m: { role: "user" | "assistant"; content: string }) => ({ role: m.role, content: clip(m.content, LIMITS.message) }));
@@ -21,40 +21,53 @@ export async function POST(req: Request) {
   const transcript = clip(body.transcript, LIMITS.transcript);
   const context = clip(body.context, LIMITS.context);
 
-  // The source material goes first and stays identical across turns, so it caches.
-  const system: Anthropic.Beta.BetaTextBlockParam[] = [
-    {
-      type: "text",
-      text: `You are a tutor sitting next to the learner while they watch and study. ${LEARNER}
+  const system = `You are a tutor sitting next to the learner while they watch and study. ${LEARNER}
 
 Answer their questions using the material below. When the transcript covers it, ground your answer in what the video says (quote briefly when useful) and say roughly where in the video it comes up if you can tell. When you go beyond the material, say so. Be concise: a few short paragraphs at most, with inline LaTeX in $...$ for math. If they ask you to just give the answer to a practice question, help them get there with a hint first.
 
-${sourceBlock({ lessonTitle, videoTitle, transcript, context })}`,
-      cache_control: { type: "ephemeral" },
-    },
-  ];
+${sourceBlock({ lessonTitle, videoTitle, transcript, context })}`;
 
   try {
-    const stream = getClient().beta.messages.stream({
+    const stream = await getClient().chat.completions.create({
       model: MODEL,
-      max_tokens: 64000,
-      betas: BETAS,
-      fallbacks: "default",
-      output_config: { effort: "low" },
-      system,
-      messages: history,
+      max_completion_tokens: 4000,
+      reasoning_effort: "low",
+      stream: true,
+      messages: [{ role: "system", content: system }, ...history],
     });
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
+        // Hide any <think>…</think> block a reasoning model streams into the content.
+        let inThink = false;
+        let pending = "";
         try {
-          for await (const event of stream) {
-            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-              controller.enqueue(encoder.encode(event.delta.text));
+          for await (const chunk of stream) {
+            pending += chunk.choices[0]?.delta?.content ?? "";
+            let out = "";
+            for (;;) {
+              if (inThink) {
+                const end = pending.indexOf("</think>");
+                if (end < 0) { pending = pending.slice(-8); break; }
+                pending = pending.slice(end + 8);
+                inThink = false;
+              } else {
+                const start = pending.indexOf("<think>");
+                if (start < 0) {
+                  const keep = pending.lastIndexOf("<");
+                  const safe = keep >= 0 && pending.length - keep < 7 ? keep : pending.length;
+                  out += pending.slice(0, safe);
+                  pending = pending.slice(safe);
+                  break;
+                }
+                out += pending.slice(0, start);
+                pending = pending.slice(start + 7);
+                inThink = true;
+              }
             }
+            if (out) controller.enqueue(encoder.encode(out));
           }
-          const final = await stream.finalMessage();
-          if (final.stop_reason === "refusal") controller.enqueue(encoder.encode("\n\n_(The model declined to answer this one.)_"));
+          if (!inThink && pending) controller.enqueue(encoder.encode(pending));
         } catch (err) {
           const res = errorResponse(err);
           const msg = ((await res.json()) as { error?: string }).error ?? "Error";
@@ -64,7 +77,7 @@ ${sourceBlock({ lessonTitle, videoTitle, transcript, context })}`,
         }
       },
       cancel() {
-        stream.abort();
+        stream.controller.abort();
       },
     });
     return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });

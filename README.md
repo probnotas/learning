@@ -180,21 +180,19 @@ Things to know:
 
 ## AI features (video tests, notes check, Ask AI)
 
-Three features use Claude (model `claude-opus-5-5`, via the official `@anthropic-ai/sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
+Three features use **Groq** (model `openai/gpt-oss-120b` by default, change it with `GROQ_MODEL`; via the official `groq-sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
 
 - **Video test.** After every video there's a 5-question test written from that video's transcript. A video is complete only when you get every question right; wrong answers can be retried, and "New questions" writes a fresh set. Tests are saved, so they don't change when you come back.
 - **Check my notes** (Notes tab). Compares your notes with the transcript and lesson. You get what's right, errors with fixes, missing key ideas, and one question to test yourself.
 - **Ask AI** (tab next to Notes). Ask questions while you watch. Answers stream in and are grounded in the current video's transcript (or all of the lesson's transcripts on non-video pages) plus the lesson text.
 
-**Setup.** Copy `.env.example` to `.env.local`, put your key in `ANTHROPIC_API_KEY`, and restart `npm run dev`. On Vercel, add the same variables under Project → Settings → Environment Variables, then redeploy. Without a key, everything else works and videos fall back to an "I watched it" button.
+**Setup.** Copy `.env.example` to `.env.local`, put your Groq key (from console.groq.com/keys) in `GROQ_API_KEY`, and restart `npm run dev`. On Vercel, add the same variables under Project → Settings → Environment Variables, then redeploy. Without a key, everything else works and videos fall back to an "I watched it" button.
 
 **Set `LEARNLAB_ACCESS_CODE` on any public deployment.** The AI routes are public URLs; without a code, anyone who finds your site can spend your API credits. With it set, the app asks for the code once per browser. Inputs are size-capped server-side either way.
 
 **Transcripts are pasted in, not fetched.** Downloading YouTube transcripts automatically means getting around YouTube's bot protection, and it would also mirror copyrighted text. So each video page has an **Add transcript** box: on YouTube, open the video, click *…more* → *Show transcript*, copy it all, and paste. It's stored only in your browser (`learnlab:transcripts` in localStorage), never committed. Without a transcript, the test and answers fall back to the lesson text and the video's well-known content, and the app says so.
 
-**Refusals.** Requests opt into Anthropic's server-side refusal fallback (`fallbacks: "default"`), so a declined request is retried on Anthropic's recommended fallback model automatically.
-
-**Cost.** Each test, notes check or question is one request with the transcript included (a 15-minute video is roughly 3–4k tokens). The chat route marks the transcript for prompt caching, so follow-up questions are cheaper.
+**Cost and limits.** Each test, notes check or question is one request with the transcript included (a 15-minute video is roughly 3–4k tokens). Groq's free tier has per-minute and per-day limits; if you hit one, the app says so and you can retry shortly.
 
 ## Deploying to Vercel
 
@@ -208,14 +206,14 @@ The app is set up so a Vercel deploy is just the default Next.js build:
    - **Install Command:** default (`npm install`)
    - **Output Directory:** default (leave empty; *don't* set `out` or `public`)
    - **Node.js Version:** 22.x (pinned in `package.json`)
-   - Environment variables: none are needed for the course itself. For the AI features add `ANTHROPIC_API_KEY` and `LEARNLAB_ACCESS_CODE` (see "AI features").
+   - Environment variables: none are needed for the course itself. For the AI features add `GROQ_API_KEY` and `LEARNLAB_ACCESS_CODE` (see "AI features").
 3. Deploy. If a deploy fails, the error is in the **Build Logs**. Copy the first red error line and that's usually enough to fix it.
 
 Why it works on Vercel:
 
 - **Every page is prerendered at build time** (`generateStaticParams` for units, lessons and items), so `CURRICULUM.md` and `content/` are read only during the build. At runtime nothing touches the filesystem, so serverless functions can't fail on missing files. Unknown URLs get a proper 404.
 - **Monaco is copied in the build step itself** (`npm run build` runs `scripts/copy-monaco.mjs` first), so it doesn't depend on `postinstall` running or on Vercel's install cache. `public/monaco/` stays out of git.
-- The only server code is the API routes: `/api/ai/*` (AI features, which need `ANTHROPIC_API_KEY`) and `POST /api/generate-lesson` (the TODO stub). None of them read files at runtime.
+- The only server code is the API routes: `/api/ai/*` (AI features, which need `GROQ_API_KEY`) and `POST /api/generate-lesson` (the TODO stub). None of them read files at runtime.
 - Tested with a clean checkout: `npm ci`, then `npm run build`, then `next start` with `content/` and `CURRICULUM.md` deleted. All pages return 200, unknown URLs 404, and there are no server errors.
 
 After deploying:
@@ -230,7 +228,7 @@ The app makes no tracking, analytics or font requests. Monaco, KaTeX and its fon
 
 YouTube is only contacted when you press a video's play button (embeds use `youtube-nocookie.com`). External reading links open in a new tab when you click them. "Generate full lesson" calls the app's own local API route.
 
-**AI features are the one exception.** When you take a video test, check your notes or ask a question, your app's server sends the lesson text, the video's transcript (if you added one), your notes or question to the Claude API using your key. Nothing is sent until you press one of those buttons.
+**AI features are the one exception.** When you take a video test, check your notes or ask a question, your app's server sends the lesson text, the video's transcript (if you added one), your notes or question to the Groq API using your key. Nothing is sent until you press one of those buttons.
 
 ## Known limitations
 

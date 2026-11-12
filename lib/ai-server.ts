@@ -1,22 +1,20 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 
-// One model for everything; effort is tuned per route.
-export const MODEL = "claude-opus-5-5";
-// Server-side refusal fallback: if a request is declined, the API retries it on
-// Anthropic's recommended fallback model inside the same call.
-export const BETAS: Anthropic.Beta.AnthropicBeta[] = ["server-side-fallback-2026-07-01"];
+// Groq's strongest production chat model, and the one with strict JSON-schema output.
+// Override with GROQ_MODEL (see https://console.groq.com/docs/models).
+export const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 // Size caps so a public deployment can't be used to send huge prompts.
 export const LIMITS = { transcript: 80_000, context: 20_000, notes: 20_000, message: 4_000, history: 24 };
 
 export function aiConfigured(): boolean {
-  return !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  return !!process.env.GROQ_API_KEY;
 }
 
-let client: Anthropic | null = null;
-export function getClient(): Anthropic {
-  client ??= new Anthropic();
+let client: Groq | null = null;
+export function getClient(): Groq {
+  client ??= new Groq({ apiKey: process.env.GROQ_API_KEY });
   return client;
 }
 
@@ -24,7 +22,7 @@ export function getClient(): Anthropic {
 export function checkAccess(req: Request): Response | null {
   if (!aiConfigured()) {
     return Response.json(
-      { error: "AI is off: set ANTHROPIC_API_KEY (in .env.local locally, or in Vercel's Environment Variables) and restart." },
+      { error: "AI is off: set GROQ_API_KEY (in .env.local locally, or in Vercel's Environment Variables) and restart." },
       { status: 501 },
     );
   }
@@ -40,7 +38,7 @@ export function clip(s: unknown, max: number): string {
   return str.length > max ? str.slice(0, max) : str;
 }
 
-/** Shared framing: the learner, the lesson, and (optionally) the video transcript. */
+/** Shared framing: the lesson and (optionally) the video transcript. */
 export function sourceBlock(p: { lessonTitle: string; videoTitle?: string; transcript?: string; context?: string }): string {
   const parts = [`<lesson title="${p.lessonTitle.replace(/"/g, "'")}">\n${p.context || "(no lesson text provided)"}\n</lesson>`];
   if (p.videoTitle) {
@@ -56,12 +54,17 @@ export function sourceBlock(p: { lessonTitle: string; videoTitle?: string; trans
 export const LEARNER =
   "The learner is studying robotics fundamentals to do self-model / world-model research. Their running example is a compliant pendulum: a motor drives angle θm, a torsional spring k connects it to an arm of mass m at length L with damping c (I = mL², ω_n = √((k + mgL)/I)). They learn by doing and want to be able to defend their understanding in research conversations.";
 
+/** Some reasoning models put their thinking inside <think> tags in the content. */
+export function stripThinking(s: string): string {
+  return s.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+}
+
 export function errorResponse(err: unknown): Response {
-  if (err instanceof Anthropic.AuthenticationError) return Response.json({ error: "The API key was rejected. Check ANTHROPIC_API_KEY." }, { status: 502 });
-  if (err instanceof Anthropic.RateLimitError) return Response.json({ error: "Rate limited by the API. Wait a moment and try again." }, { status: 429 });
-  if (err instanceof Anthropic.BadRequestError) return Response.json({ error: `The API rejected the request: ${err.message}` }, { status: 502 });
-  if (err instanceof Anthropic.APIError) return Response.json({ error: `API error ${err.status}: ${err.message}` }, { status: 502 });
-  if (err instanceof Anthropic.APIConnectionError) return Response.json({ error: "Couldn't reach the Claude API." }, { status: 502 });
+  if (err instanceof Groq.AuthenticationError) return Response.json({ error: "The Groq API key was rejected. Check GROQ_API_KEY." }, { status: 502 });
+  if (err instanceof Groq.RateLimitError) return Response.json({ error: "Groq rate limit hit. Wait a moment and try again." }, { status: 429 });
+  if (err instanceof Groq.BadRequestError) return Response.json({ error: `Groq rejected the request: ${err.message}` }, { status: 502 });
+  if (err instanceof Groq.APIError && typeof err.status === "number") return Response.json({ error: `Groq API error ${err.status}: ${err.message}` }, { status: 502 });
+  if (err instanceof Groq.APIConnectionError) return Response.json({ error: "Couldn't reach the Groq API." }, { status: 502 });
   console.error(err);
   return Response.json({ error: "Something went wrong on the server." }, { status: 500 });
 }

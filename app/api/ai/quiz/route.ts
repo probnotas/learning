@@ -1,4 +1,4 @@
-import { BETAS, checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock } from "@/lib/ai-server";
+import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock, stripThinking } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -44,14 +44,13 @@ export async function POST(req: Request) {
   if (!videoTitle) return Response.json({ error: "videoTitle is required" }, { status: 400 });
 
   try {
-    const response = await getClient().beta.messages.create({
+    const completion = await getClient().chat.completions.create({
       model: MODEL,
-      max_tokens: 16000,
-      betas: BETAS,
-      fallbacks: "default",
-      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
-      system: `You write short comprehension checks for a self-paced course. ${LEARNER}`,
+      max_completion_tokens: 8000,
+      reasoning_effort: "medium",
+      response_format: { type: "json_schema", json_schema: { name: "video_test", strict: true, schema: SCHEMA } },
       messages: [
+        { role: "system", content: `You write short comprehension checks for a self-paced course. ${LEARNER}` },
         {
           role: "user",
           content: `${sourceBlock({ lessonTitle, videoTitle, transcript, context })}
@@ -66,10 +65,7 @@ Write a 5-question multiple-choice test the learner takes right after watching "
         },
       ],
     });
-    if (response.stop_reason === "refusal") {
-      return Response.json({ error: "The model declined to write this test. Try regenerating." }, { status: 422 });
-    }
-    const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+    const text = stripThinking(completion.choices[0]?.message?.content ?? "");
     const parsed = JSON.parse(text) as { questions: QuizQuestion[] };
     const questions = parsed.questions
       .filter((q) => Array.isArray(q.choices) && q.choices.length >= 2 && q.answer >= 0 && q.answer < q.choices.length)

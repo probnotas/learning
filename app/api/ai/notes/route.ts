@@ -1,4 +1,4 @@
-import { BETAS, checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock } from "@/lib/ai-server";
+import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock, stripThinking } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,14 +16,12 @@ export async function POST(req: Request) {
   const context = clip(body.context, LIMITS.context);
 
   try {
-    const response = await getClient().beta.messages.create({
+    const completion = await getClient().chat.completions.create({
       model: MODEL,
-      max_tokens: 16000,
-      betas: BETAS,
-      fallbacks: "default",
-      output_config: { effort: "medium" },
-      system: `You review a learner's study notes against the source material, like a sharp, kind TA. ${LEARNER}`,
+      max_completion_tokens: 6000,
+      reasoning_effort: "medium",
       messages: [
+        { role: "system", content: `You review a learner's study notes against the source material, like a sharp, kind TA. ${LEARNER}` },
         {
           role: "user",
           content: `${sourceBlock({ lessonTitle, videoTitle, transcript, context })}
@@ -41,8 +39,8 @@ Keep it under 250 words. Quote the learner's words when you correct them.`,
         },
       ],
     });
-    if (response.stop_reason === "refusal") return Response.json({ error: "The model declined to review these notes." }, { status: 422 });
-    const feedback = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+    const feedback = stripThinking(completion.choices[0]?.message?.content ?? "");
+    if (!feedback) return Response.json({ error: "The model returned an empty review. Try again." }, { status: 502 });
     return Response.json({ feedback });
   } catch (err) {
     return errorResponse(err);

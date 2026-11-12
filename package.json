@@ -11,9 +11,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.8.0",
     "@monaco-editor/react": "^4.7.0",
     "gray-matter": "^4.0.3",
+    "groq-sdk": "^1.6.0",
     "katex": "^0.19.1",
     "monaco-editor": "^0.52.2",
     "next": "^14.2.35",
