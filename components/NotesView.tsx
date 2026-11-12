@@ -46,7 +46,7 @@ export function NotesView() {
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-semibold text-ink-100">Cross-lesson notebook</h2>
-          <button onClick={exportAll} className="rounded-md border border-ink-700 px-3 py-1.5 font-sans text-sm text-ink-300 hover:border-ink-400">
+          <button onClick={exportAll} className="rounded-full bg-ink-800 px-4 py-2 font-sans text-sm font-medium text-ink-200 hover:bg-ink-700">
             Export all notes (.md)
           </button>
         </div>
@@ -57,7 +57,7 @@ export function NotesView() {
           value={text}
           onChange={(e) => onChange(e.target.value)}
           placeholder="e.g. 'Mass bump lowers ω_n, so whether amplitude goes up or down depends on which side of resonance I'm driving...'"
-          className="mt-4 h-72 w-full rounded-md border border-ink-700 bg-ink-900 p-4 font-serif text-ink-100 placeholder:text-ink-600 focus:border-accent-dim focus:outline-none"
+          className="mt-4 h-72 w-full rounded-2xl border border-ink-800 bg-ink-900 p-5 font-serif text-ink-100 placeholder:text-ink-600 focus:border-accent-dim focus:outline-none"
         />
       </section>
       <section>
@@ -67,15 +67,15 @@ export function NotesView() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter…"
-            className="rounded-md border border-ink-700 bg-ink-900 px-2 py-1 font-sans text-sm text-ink-100 focus:outline-none"
+            className="rounded-full border border-ink-800 bg-ink-900 px-4 py-1.5 font-sans text-sm text-ink-100 focus:outline-none"
           />
         </div>
         {lessonNotes.length === 0 ? (
-          <p className="mt-3 font-serif text-ink-400">No lesson notes yet. Each lesson has a “My notes” box at the bottom.</p>
+          <p className="mt-3 font-serif text-ink-400">No lesson notes yet. Every lesson has a Notes panel next to it.</p>
         ) : (
           <ul className="mt-4 space-y-4">
             {lessonNotes.map(({ lesson, notes }) => (
-              <li key={lesson.id} className="rounded-lg border border-ink-800 bg-ink-900 p-4">
+              <li key={lesson.id} className="rounded-2xl border border-ink-800 bg-ink-900 p-5">
                 <Link href={`/lesson/${lesson.id}`} className="font-sans text-sm font-semibold text-accent hover:underline">
                   {lesson.topic} · {lesson.title}
                 </Link>

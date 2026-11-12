@@ -35,12 +35,12 @@ for (const f of files) {
 
   // Nothing may sit outside an item: every top-level block must be one of the item tags.
   const stripped = content
-    .replace(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b[^>]*\/>/g, "")
-    .replace(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b[^>]*>[\s\S]*?<\/\1>/g, "")
+    .replace(/<(Article|Watch|Read|Quiz|Build|Test|Milestones|Paper)\b[^>]*\/>/g, "")
+    .replace(/<(Article|Watch|Read|Quiz|Build|Test|Milestones|Paper)\b[^>]*>[\s\S]*?<\/\1>/g, "")
     .trim();
   if (stripped) fail(id, `content outside an item: "${stripped.slice(0, 60)}…"`);
 
-  const items = [...content.matchAll(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b([^>]*?)\/?>/g)].map((m) => ({
+  const items = [...content.matchAll(/<(Article|Watch|Read|Quiz|Build|Test|Milestones|Paper)\b([^>]*?)\/?>/g)].map((m) => ({
     tag: m[1],
     id: m[2].match(/\bid="([^"]+)"/)?.[1],
     draft: /\bdraft\b/.test(m[2]),
@@ -60,7 +60,8 @@ for (const f of files) {
     continue;
   }
   if (!items.some((i) => i.tag === "Watch" || i.tag === "Read")) fail(id, "no <Watch>/<Read> items");
-  for (const tag of ["Article", "Quiz", "Build"]) if (!items.some((i) => i.tag === tag)) fail(id, `no <${tag}> item`);
+  for (const tag of ["Article", "Quiz", "Build", "Test"]) if (!items.some((i) => i.tag === tag)) fail(id, `no <${tag}> item`);
+  if (items.length && items[items.length - 1].tag !== "Test") fail(id, "the <Test> (lesson test) should be the last item");
 
   if (data.status === "full") {
     if (items.some((i) => i.draft)) fail(id, "full lesson with draft items");

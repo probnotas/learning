@@ -42,20 +42,21 @@ export function StudyPanel({
   };
 
   return (
-    <section className="flex min-h-[420px] flex-col overflow-hidden rounded-[32px] border border-ink-800 bg-ink-900 shadow-sm">
-      <div className="flex items-center gap-1 bg-ink-850 px-4 py-3">
+    <section className="flex min-h-[420px] flex-col overflow-hidden rounded-[28px] border border-ink-800 bg-ink-900">
+      <div className="flex items-center gap-6 bg-ink-950/70 px-6 py-5">
         {(["notes", "ask"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${tab === t ? "bg-ink-900 text-ink-100 shadow-sm" : "text-ink-400 hover:text-ink-200"}`}
+            className={`flex items-center gap-2.5 text-[17px] font-semibold transition ${tab === t ? "text-ink-200" : "text-ink-400 hover:text-ink-300"}`}
           >
-            {t === "notes" ? "🗒️ Notes" : "✦ Ask AI"}
+            <span className="text-lg">{t === "notes" ? "🗒️" : "✦"}</span>
+            {t === "notes" ? "Notes" : "Ask AI"}
           </button>
         ))}
-        <span className="ml-auto pr-2 text-[11px] text-ink-400">
-          {video ? (transcript ? "transcript ✓" : "no transcript") : ""}
-        </span>
+        {video && (
+          <span className={`ml-auto text-[11px] ${transcript ? "text-good" : "text-ink-400"}`}>{transcript ? "transcript ✓" : "no transcript"}</span>
+        )}
       </div>
       {tab === "notes" ? (
         <Notes meta={meta} initial={initialNotes} hydrated={hydrated} aiEnabled={!!status?.enabled} context={context} source={source} />
@@ -118,7 +119,7 @@ function Notes({
           }, 500);
         }}
         placeholder={"Take notes while you watch and work.\n\nThey're saved for this lesson and collected in your notebook."}
-        className="min-h-[180px] flex-1 resize-none bg-transparent px-6 py-5 font-serif text-[15px] leading-relaxed text-ink-100 placeholder:text-ink-400 focus:outline-none"
+        className="min-h-[180px] flex-1 resize-none bg-transparent px-6 py-5 text-[15px] leading-relaxed text-ink-100 placeholder:text-ink-400 focus:outline-none"
       />
       {feedback && (
         <div className="max-h-[45%] overflow-y-auto border-t border-ink-800 bg-ink-850 px-6 py-4 text-sm text-ink-200">
@@ -131,13 +132,13 @@ function Notes({
           <RichText text={feedback} />
         </div>
       )}
-      <div className="flex items-center gap-3 border-t border-ink-800 px-5 py-3">
+      <div className="flex items-center gap-3 px-5 py-4">
         <span className="text-xs text-ink-400">{saved ? "Saved" : "Saving…"}</span>
         <button
           onClick={check}
           disabled={!aiEnabled || busy || !text.trim()}
           title={aiEnabled ? "Have the AI compare your notes with the video and lesson" : "Set GROQ_API_KEY to enable"}
-          className="ml-auto rounded-full bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 hover:bg-ink-700 disabled:opacity-40"
+          className="ml-auto rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-ink-200 hover:bg-ink-800 disabled:opacity-40"
         >
           {busy ? "Checking…" : "✦ Check my notes"}
         </button>

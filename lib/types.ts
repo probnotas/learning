@@ -33,7 +33,7 @@ export interface Curriculum {
   year2: string;
 }
 
-export type ItemKind = "article" | "video" | "reading" | "quiz" | "build" | "milestones" | "paper";
+export type ItemKind = "article" | "video" | "reading" | "quiz" | "build" | "test" | "milestones" | "paper";
 
 /** One mini-lesson inside a lesson: a short article, a video, a reading, a practice quiz, or a build. */
 export interface ItemMeta {

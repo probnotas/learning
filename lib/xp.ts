@@ -12,6 +12,7 @@ function itemXP(it: ItemMeta): number {
     case "reading": return 30;
     case "quiz": return 25 * it.questionIds.length;
     case "build": return 150;
+    case "test": return 100;
     case "milestones": return 60 * it.questionIds.length;
     case "paper": return 500;
   }

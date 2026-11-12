@@ -102,7 +102,7 @@ export function Watch({
     : `https://www.youtube.com/playlist?list=${playlist}`;
   return (
     <div>
-      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
         {loaded ? (
           <iframe
             className="absolute inset-0 h-full w-full"
@@ -116,8 +116,7 @@ export function Watch({
             onClick={() => setLoaded(true)}
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/80 hover:text-white"
           >
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 text-3xl">▶</span>
-            <span className="text-xs">Play (loads from youtube-nocookie.com)</span>
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 pl-1 text-2xl">▶</span>
           </button>
         )}
       </div>
@@ -155,7 +154,7 @@ export function Read({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-lg border-2 border-ink-700 bg-ink-900 p-5 hover:border-accent"
+        className="block rounded-2xl border border-white/10 bg-ink-900 p-6 transition hover:border-white/40"
       >
         <span className="text-xs uppercase tracking-widest text-ink-400">Free source · opens in a new tab</span>
         <span className="mt-1 block text-lg font-semibold text-accent">{title} ↗</span>

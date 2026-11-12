@@ -59,7 +59,7 @@ export function ProjectsView() {
             const started = l.items.some((it) => itemDone(it, p)) || !!p.paper;
             const locked = lockInfo(index, state, l).locked;
             return (
-              <li key={l.id} className={`rounded-xl border p-4 ${done ? "border-good/60 bg-good/5" : "border-ink-800 bg-ink-900"}`}>
+              <li key={l.id} className={`rounded-2xl border p-4 ${done ? "border-good/60 bg-good/5" : "border-ink-800 bg-ink-900"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/lesson/${l.id}`} className="font-sans font-semibold text-ink-100 hover:underline">
                     🏆 {l.title.replace(/^Capstone:\s*/, "")}
@@ -91,7 +91,7 @@ export function ProjectsView() {
       <section>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {PROJECTS.map((p) => (
-            <Link key={p.id} href={`/projects/${p.id}`} className="block rounded-lg border border-good/40 bg-ink-900 p-5 hover:border-good">
+            <Link key={p.id} href={`/projects/${p.id}`} className="block rounded-2xl border border-good/40 bg-ink-900 p-5 hover:border-good">
               <h2 className="font-sans text-lg font-semibold text-ink-100">{p.title} →</h2>
               <p className="mt-2 font-serif text-sm text-ink-300">{p.summary}</p>
               <p className="mt-3 font-sans text-xs text-ink-400">Tied to: {p.lessons.map(title).join(" · ")}</p>
@@ -103,15 +103,15 @@ export function ProjectsView() {
       <section>
         <h2 className="font-sans text-lg font-semibold text-ink-100">Build log</h2>
         <p className="mt-1 font-serif text-sm text-ink-400">What you built, what broke, what you learned. Saved in this browser.</p>
-        <div className="mt-4 rounded-lg border border-ink-800 bg-ink-900 p-4 font-sans">
+        <div className="mt-4 rounded-2xl border border-ink-800 bg-ink-900 p-4 font-sans">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="e.g. Fitted k/I, g/L, c/I from sim data. Mass bump shows up as k/I dropping by 1/1.5, g/L unchanged."
-            className="h-24 w-full rounded-md border border-ink-700 bg-ink-950 p-3 font-serif text-ink-100 placeholder:text-ink-600 focus:outline-none"
+            className="h-24 w-full rounded-2xl border border-ink-700 bg-ink-950 p-3 font-serif text-ink-100 placeholder:text-ink-600 focus:outline-none"
           />
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-            <select value={lessonId} onChange={(e) => setLessonId(e.target.value)} className="rounded-md border border-ink-700 bg-ink-950 px-2 py-1 text-ink-200">
+            <select value={lessonId} onChange={(e) => setLessonId(e.target.value)} className="rounded-2xl border border-ink-700 bg-ink-950 px-2 py-1 text-ink-200">
               <option value="">No lesson</option>
               {index.lessons.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -119,7 +119,7 @@ export function ProjectsView() {
                 </option>
               ))}
             </select>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="rounded-md border border-ink-700 bg-ink-950 px-2 py-1 text-ink-200">
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="rounded-2xl border border-ink-700 bg-ink-950 px-2 py-1 text-ink-200">
               <option value="">No project</option>
               {PROJECTS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -127,14 +127,14 @@ export function ProjectsView() {
                 </option>
               ))}
             </select>
-            <button onClick={add} className="ml-auto rounded-md bg-accent px-3 py-1.5 font-semibold text-ink-900">
+            <button onClick={add} className="ml-auto rounded-full bg-accent px-4 py-1.5 font-semibold text-ink-900">
               Add entry
             </button>
           </div>
         </div>
         <ul className="mt-4 space-y-3">
           {state.buildLog.map((e) => (
-            <li key={e.id} className="rounded-lg border border-ink-800 p-4">
+            <li key={e.id} className="rounded-2xl border border-ink-800 p-4">
               <div className="flex flex-wrap items-center gap-2 font-sans text-xs text-ink-400">
                 <span>{new Date(e.date).toLocaleString()}</span>
                 {e.lessonId && (
@@ -155,7 +155,7 @@ export function ProjectsView() {
 
       <section>
         <h2 className="font-sans text-lg font-semibold text-ink-100">Lesson builds</h2>
-        <ul className="mt-3 divide-y divide-ink-800 rounded-lg border border-ink-800 font-sans text-sm">
+        <ul className="mt-3 divide-y divide-ink-800 rounded-2xl border border-ink-800 font-sans text-sm">
           {builds.map((l) => {
             const p = lp(state, l.id);
             return (

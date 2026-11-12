@@ -37,7 +37,8 @@ Other scripts:
 - **Build**: Monaco editor + Run. It passes when every test passes.
 - **Unit projects (🏆, one per unit)**: after a unit's lessons comes a capstone, a small research project built with the tools robotics labs use (MuJoCo, JAX/MJX, PyTorch, Gymnasium, Stable-Baselines3, SciPy, python-control, scikit-learn). Each has a brief (research question, why a lab like 1X cares, what to build), tools and setup (install commands, starter MuJoCo model), milestones you tick off as your repo progresses, and a **paper** you write in the app (Abstract, Introduction, Setup, Method, Results, Discussion) next to a rubric. "✦ Review against the rubric" gets reviewer-style feedback; "Submit to portfolio" needs every section filled in (40+ words) and a public repo link. The projects build on each other: the MuJoCo compliant pendulum from A1 is the testbed for B1, A4, C2 and F3.
 - **Notebook (`/notes`)** and **Portfolio & projects (`/projects`)**: all your notes with Markdown export; every unit project's status, repo link and paper download; the pendulum playground and a build log.
-- **Theme**: dark by default, with a ☀/☾ toggle (remembered). The lesson card is always deep green.
+- **Look**: cream background with Plus Jakarta Sans by default, and the lesson card always deep green. A ☾/☀ toggle (on the campus rail and the Notebook/Portfolio pages) switches to a dark theme and is remembered.
+- **Lesson test (★, last item of every lesson)**: 4 questions on the whole lesson (two concepts, one calculation, one applied "work" scenario on the pendulum or a self-model decision), written by the AI from the lesson text and any transcripts you've added. Get all four right to pass the lesson; "New questions" writes a fresh set.
 
 To move a unit to a different building, edit the coordinates in `lib/world.ts` (fractions of the image width and height).
 
@@ -134,7 +135,11 @@ Inside a locked lesson there's an "Unlock anyway…" link behind a confirm dialo
    <Build id="build" title="Build: …">
    Intro text, then the editor appears below. <Callout> / <ProjectLink id="compliant-pendulum"> can go here too.
    </Build>
+
+   <Test id="test" title="Lesson test" />
    ```
+
+   Every lesson (except unit projects) must end with `<Test>`, the 4-question AI-written lesson test; the checker enforces it.
 
    - `answer` takes one or more numbers separated by `;`, one input box each. `labels` and `tol` use the same `;` order. `tol` is relative and defaults to 1%.
    - Keep each `<Choice>` on one line, and use inline math only inside choices.
@@ -192,8 +197,9 @@ Things to know:
 
 ## AI features (video tests, notes check, Ask AI)
 
-Four features use **Groq** (model `openai/gpt-oss-120b` by default, change it with `GROQ_MODEL`; via the official `groq-sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
+Five features use **Groq** (model `openai/gpt-oss-120b` by default, change it with `GROQ_MODEL`; via the official `groq-sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
 
+- **Lesson test.** The 4-question test that ends every lesson (see above).
 - **Video test.** After every video there's a 5-question test written from that video's transcript. A video is complete only when you get every question right; wrong answers can be retried, and "New questions" writes a fresh set. Tests are saved, so they don't change when you come back.
 - **Review against the rubric** (unit projects). Reviewer-style scores per rubric item, the top 3 fixes, and questions a lab engineer would ask.
 - **Check my notes** (Notes tab). Compares your notes with the transcript and lesson. You get what's right, errors with fixes, missing key ideas, and one question to test yourself.
@@ -237,7 +243,7 @@ After deploying:
 
 ## Privacy and network
 
-The app makes no tracking, analytics or font requests. Monaco, KaTeX and the fonts are served from your own site. Main titles use **Redaction 20** (SIL Open Font License, bundled via `@fontsource/redaction-20`); everything else uses system fonts.
+The app makes no tracking, analytics or font requests. Monaco, KaTeX and the fonts are served from your own site. The typeface is **Plus Jakarta Sans** (SIL Open Font License, bundled via `@fontsource/plus-jakarta-sans`); code and numbers use the system monospace font.
 
 YouTube is only contacted when you press a video's play button (embeds use `youtube-nocookie.com`). External reading links open in a new tab when you click them. "Generate full lesson" calls the app's own local API route.
 

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
-import "@fontsource/redaction-20/400.css";
-import "@fontsource/redaction-20/700.css";
+import "@fontsource/plus-jakarta-sans/400.css";
+import "@fontsource/plus-jakarta-sans/400-italic.css";
+import "@fontsource/plus-jakarta-sans/500.css";
+import "@fontsource/plus-jakarta-sans/600.css";
+import "@fontsource/plus-jakarta-sans/700.css";
+import "@fontsource/plus-jakarta-sans/800.css";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { IndexProvider } from "@/components/IndexProvider";
@@ -17,9 +21,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const index = loadIndex();
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
-        {/* Apply the saved theme before first paint (dark by default). */}
+        {/* Apply the saved theme before first paint (cream/light by default). */}
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("learnlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`,

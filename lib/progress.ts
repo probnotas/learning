@@ -79,7 +79,7 @@ export function itemDone(item: ItemMeta, p: LessonProgress): boolean {
   if (item.draft) return false;
   if (item.kind === "quiz") return item.questionIds.length > 0 && item.questionIds.every((q) => p.answers[q]?.correct);
   if (item.kind === "build") return p.buildPassed;
-  if (item.kind === "video" && p.videoTests?.[item.id]?.passed) return true;
+  if ((item.kind === "video" || item.kind === "test") && p.videoTests?.[item.id]?.passed) return true;
   if (item.kind === "milestones") return item.questionIds.length > 0 && item.questionIds.every((m) => p.items[`${item.id}:${m}`]);
   if (item.kind === "paper") return !!p.paper?.submitted && paperReady(item, p.paper);
   return !!p.items[item.id];

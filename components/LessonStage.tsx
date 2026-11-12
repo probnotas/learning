@@ -6,7 +6,7 @@ import { itemDone, lessonPassed, lockInfo, lp, nextItem, nextLesson } from "@/li
 import { update, updateLesson, useAppState } from "@/lib/store";
 import type { LessonMeta, Unit } from "@/lib/types";
 import { siteFor } from "@/lib/world";
-import { BackButton, LevelPill, ThemeToggle } from "./Chrome";
+import { BackButton, LevelPill } from "./Chrome";
 import { KIND_LABEL } from "./Icons";
 import { StudyPanel } from "./ai/StudyPanel";
 import { useIndex } from "./IndexProvider";
@@ -73,34 +73,22 @@ export function LessonStage({
     <ItemProvider value={{ meta, activeItem, context, goNext }}>
       <div className="flex min-h-screen flex-col bg-ink-950 font-sans lg:h-screen">
         {/* top row */}
-        <div className="flex items-center gap-4 px-6 pb-4 pt-6 lg:px-10">
+        <div className="flex items-center justify-between px-6 pb-5 pt-6 lg:px-10">
           <BackButton href={worldHref} label="Back to the campus" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-ink-400">
-              Unit {unit.number} · {unit.title}
-            </p>
-            <h1 className="truncate font-display text-lg font-semibold text-ink-100">{meta.title}</h1>
-          </div>
-          <ThemeToggle className="flex h-11 w-11 items-center justify-center rounded-full border border-ink-800 bg-ink-900 text-lg text-ink-200 shadow-sm hover:bg-ink-850" />
           <LevelPill light />
         </div>
 
         <div className="grid min-h-0 flex-1 gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:pb-8">
           {/* the stage */}
-          <section className="stage relative flex min-h-[70vh] flex-col overflow-hidden rounded-[32px] shadow-xl lg:min-h-0">
-            <div className="flex items-center justify-between px-8 pt-7">
+          <section className="stage relative flex min-h-[70vh] flex-col overflow-hidden rounded-[28px] lg:min-h-0">
+            <div className="px-8 pt-8">
               <span
-                className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow"
+                className="flex h-12 w-12 items-center justify-center rounded-xl text-base font-extrabold text-white"
                 style={{ background: color }}
                 title={`Unit ${unit.number}: ${unit.title}`}
               >
                 {unit.topic}
               </span>
-              {item && (
-                <span className="rounded-full bg-white/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-ink-300">
-                  {KIND_LABEL[item.kind]} · {idx + 1}/{meta.items.length}
-                </span>
-              )}
             </div>
 
             <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-4 lg:px-14">
@@ -116,7 +104,14 @@ export function LessonStage({
                       </button>
                     </div>
                   )}
-                  {item && <h2 className="mb-6 text-center font-display text-3xl font-bold tracking-tight text-ink-100 lg:text-4xl">{item.title}</h2>}
+                  {item && (
+                    <header className="mb-8 text-center">
+                      <p className="text-xs font-medium text-ink-400">
+                        {meta.title} · {KIND_LABEL[item.kind]}
+                      </p>
+                      <h2 className="mt-2 font-display text-3xl font-bold tracking-[-0.02em] text-ink-100 lg:text-[2.6rem] lg:leading-tight">{item.title}</h2>
+                    </header>
+                  )}
                   {children}
                   {passed && !next && (
                     <div className="mt-8 rounded-2xl border-2 border-good bg-good/10 p-5 text-center">
@@ -137,41 +132,20 @@ export function LessonStage({
               )}
             </div>
 
-            {/* story-style segments: one per item */}
-            <div className="flex items-center gap-3 px-8 pb-6 pt-2">
-              <Link
-                href={prev ? href(prev.id) : "#"}
-                aria-disabled={!prev}
-                className={`text-xl text-ink-300 ${prev ? "hover:text-ink-100" : "pointer-events-none opacity-30"}`}
-              >
-                ‹
-              </Link>
-              <div className="flex flex-1 gap-1.5">
-                {meta.items.map((it, i) => {
-                  const done = hydrated && itemDone(it, p);
-                  return (
-                    <Link
-                      key={it.id}
-                      href={href(it.id)}
-                      title={`${i + 1}. ${it.title}${it.draft ? " (not written yet)" : ""}`}
-                      className="group flex-1 py-2"
-                    >
-                      <span
-                        className={`block h-1.5 rounded-full transition ${
-                          i === idx ? "bg-white" : done ? "bg-white/80" : it.draft ? "bg-white/10" : "bg-white/25 group-hover:bg-white/45"
-                        } ${i === idx ? "ring-2 ring-accent/60" : ""}`}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
-              <Link
-                href={next ? href(next.id) : "#"}
-                aria-disabled={!next}
-                className={`text-xl text-ink-300 ${next ? "hover:text-ink-100" : "pointer-events-none opacity-30"}`}
-              >
-                ›
-              </Link>
+            {/* story-style segments: one per item (← → keys move between them) */}
+            <div className="flex gap-1.5 px-14 pb-5 pt-3">
+              {meta.items.map((it, n) => {
+                const done = hydrated && itemDone(it, p);
+                return (
+                  <Link key={it.id} href={href(it.id)} title={`${n + 1}. ${it.title}${it.draft ? " (not written yet)" : ""}`} className="group flex-1 py-2">
+                    <span
+                      className={`block h-1 rounded-full transition ${
+                        n === idx || done ? "bg-white" : it.draft ? "bg-white/10" : "bg-white/25 group-hover:bg-white/50"
+                      }`}
+                    />
+                  </Link>
+                );
+              })}
             </div>
           </section>
 

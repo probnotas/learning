@@ -35,7 +35,7 @@ export function Quiz({ id, draft, children }: { id: string; title: string; draft
   const { right, total } = quizScore(item, p);
   return (
     <div>
-      <div className="mb-6 rounded-lg border border-ink-700 bg-ink-900 p-4">
+      <div className="mb-6 rounded-2xl border border-white/10 bg-ink-900 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-ink-300">
             Get <strong className="text-ink-100">all {total}</strong> right to pass. Wrong answers can be retried as many times as you need.
@@ -133,11 +133,11 @@ export function Q({
   };
 
   const tried = (saved?.attempts ?? 0) > 0;
-  const border = solved ? "border-good" : tried ? "border-bad/60" : "border-ink-700";
+  const border = solved ? "border-good" : tried ? "border-bad/70" : "border-white/10";
 
   return (
     <QCtx.Provider value={{ picked, pick: (v) => !solved && setPicked(v), correctChoice: choice, solved, revealed }}>
-      <section id={`q-${id}`} className={`scroll-mt-20 rounded-lg border-2 ${border} bg-ink-900 p-5`}>
+      <section id={`q-${id}`} className={`scroll-mt-20 rounded-2xl border ${border} bg-ink-900 p-6`}>
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-semibold text-ink-100">
             Question {n}
@@ -160,8 +160,8 @@ export function Q({
                   onChange={(e) => setValues((vs) => vs.map((v, j) => (j === i ? e.target.value : v)))}
                   onKeyDown={(e) => e.key === "Enter" && check()}
                   inputMode="decimal"
-                  className={`w-40 rounded-md border-2 bg-ink-950 px-3 py-2 font-mono text-base text-ink-100 focus:border-accent focus:outline-none ${
-                    solved ? "border-good" : "border-ink-700"
+                  className={`w-40 rounded-xl border bg-ink-950 px-3 py-2.5 font-mono text-base text-ink-100 focus:border-white/60 focus:outline-none ${
+                    solved ? "border-good" : "border-white/15"
                   }`}
                 />
               </label>
@@ -171,7 +171,7 @@ export function Q({
 
         <div className="not-prose order-2 mt-4 flex flex-wrap items-center gap-3 font-sans">
           {!solved && (
-            <button onClick={check} className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-ink-900 hover:brightness-110">
+            <button onClick={check} className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-ink-900 hover:brightness-95">
               Check
             </button>
           )}
@@ -199,17 +199,13 @@ export function Choice({ v, children }: { v: string; children: React.ReactNode }
       tabIndex={0}
       onClick={() => q.pick(v)}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), q.pick(v))}
-      className={`not-prose my-2 flex w-full cursor-pointer items-start gap-3 rounded-md border-2 px-3 py-2.5 text-left font-serif transition-colors ${
-        right
-          ? "border-good bg-good/10"
-          : selected
-            ? "border-accent bg-accent/10"
-            : "border-ink-700 hover:border-ink-400"
+      className={`not-prose my-2 flex w-full cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-left text-[15px] transition-colors ${
+        right ? "border-good bg-good/10" : selected ? "border-white/60 bg-white/10" : "border-white/10 hover:border-white/30"
       }`}
     >
       <span
         className={`mt-1 inline-block h-4 w-4 shrink-0 rounded-full border-2 ${
-          right ? "border-good bg-good" : selected ? "border-accent bg-accent" : "border-ink-400"
+          right ? "border-good bg-good" : selected ? "border-white bg-white" : "border-white/40"
         }`}
       />
       <span className="tight text-ink-200 [&>p]:my-0">{children}</span>

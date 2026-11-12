@@ -25,6 +25,21 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
+function lessonInstructions(lessonTitle: string, count: number, hasTranscript: boolean) {
+  return `Write the ${count}-question end-of-lesson test for "${lessonTitle}". The learner has finished the videos, readings, practice and build, so test whether they can USE the lesson, not whether they remember it:
+- Questions 1 and 2: the lesson's two most important concepts ("why" or "what would happen if").
+- Question 3: a short computation with concrete numbers, like the lesson's practice problems.
+- Question 4: a work scenario: apply the lesson to the compliant pendulum or to a self-model / world-model research decision.
+- Only use material the lesson covers${hasTranscript ? " (the transcripts show what the videos said)" : ""}.`;
+}
+
+function videoInstructions(videoTitle: string, count: number, hasTranscript: boolean) {
+  return `Write a ${count}-question multiple-choice test the learner takes right after watching "${videoTitle}".
+- ${hasTranscript ? "Base every question on what the transcript actually says. Don't test things the video doesn't cover." : "There is no transcript, so base the questions on the core ideas this video is known to cover and on the lesson text, and keep them to its central ideas."}
+- Test understanding, not recall of wording: mix "why", "what would happen if", and one small computation where the video supports it.
+- Where it fits naturally, tie one question to the compliant pendulum.`;
+}
+
 interface QuizQuestion {
   question: string;
   choices: string[];
@@ -32,7 +47,8 @@ interface QuizQuestion {
   explanation: string;
 }
 
-/** POST { lessonTitle, videoTitle, transcript?, context? } → { questions, fromTranscript } */
+/** POST { mode?: "video" | "lesson", lessonTitle, videoTitle?, transcript?, context? } → { questions, fromTranscript }
+ *  video: 5 questions on one video. lesson: 4 questions on the whole lesson (the end-of-lesson test). */
 export async function POST(req: Request) {
   const denied = checkAccess(req);
   if (denied) return denied;
@@ -41,7 +57,9 @@ export async function POST(req: Request) {
   const videoTitle = clip(body.videoTitle, 300);
   const transcript = clip(body.transcript, LIMITS.transcript);
   const context = clip(body.context, LIMITS.context);
-  if (!videoTitle) return Response.json({ error: "videoTitle is required" }, { status: 400 });
+  const mode = body.mode === "lesson" ? "lesson" : "video";
+  if (mode === "video" && !videoTitle) return Response.json({ error: "videoTitle is required" }, { status: 400 });
+  const count = mode === "lesson" ? 4 : 5;
 
   try {
     const completion = await getClient().chat.completions.create({
@@ -53,12 +71,9 @@ export async function POST(req: Request) {
         { role: "system", content: `You write short comprehension checks for a self-paced course. ${LEARNER}` },
         {
           role: "user",
-          content: `${sourceBlock({ lessonTitle, videoTitle, transcript, context })}
+          content: `${sourceBlock({ lessonTitle, videoTitle: videoTitle || undefined, transcript, context })}
 
-Write a 5-question multiple-choice test the learner takes right after watching "${videoTitle}".
-- ${transcript ? "Base every question on what the transcript actually says. Don't test things the video doesn't cover." : "There is no transcript, so base the questions on the core ideas this video is known to cover and on the lesson text, and keep them to its central ideas."}
-- Test understanding, not recall of wording: mix "why", "what would happen if", and one small computation where the video supports it.
-- Where it fits naturally, tie one question to the compliant pendulum.
+${mode === "lesson" ? lessonInstructions(lessonTitle, count, !!transcript) : videoInstructions(videoTitle, count, !!transcript)}
 - Each question has exactly 4 choices, one clearly correct, with plausible distractors. Vary which position is correct.
 - Use plain text with inline LaTeX in $...$ for math.
 - explanation: 1-2 sentences on why the answer is right.`,

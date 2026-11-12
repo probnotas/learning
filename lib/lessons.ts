@@ -25,6 +25,7 @@ const ITEM_KIND: Record<string, ItemKind> = {
   Read: "reading",
   Quiz: "quiz",
   Build: "build",
+  Test: "test",
   Milestones: "milestones",
   Paper: "paper",
 };
@@ -35,7 +36,7 @@ function parseLesson(id: string): LessonMeta {
   const topic = String(data.topic ?? "").toUpperCase();
 
   const items: ItemMeta[] = [];
-  for (const m of content.matchAll(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b([^>]*?)\/?>/g)) {
+  for (const m of content.matchAll(/<(Article|Watch|Read|Quiz|Build|Test|Milestones|Paper)\b([^>]*?)\/?>/g)) {
     const a = attrs(m[2]);
     const kind = ITEM_KIND[m[1]];
     if (!a.id) continue;
@@ -142,6 +143,7 @@ export function lessonPlainText(id: string): string {
     .replace(/<Build\b[\s\S]*?<\/Build>/g, "")
     .replace(/<Build\b[^>]*\/>/g, "")
     .replace(/<Paper\b[\s\S]*?<\/Paper>/g, "")
+    .replace(/<Test\b[^>]*\/>/g, "")
     .replace(/<(Article|Watch|Read)\b[^>]*title="([^"]*)"[^>]*>/g, (_m, tag: string, title: string) => `\n[${tag === "Watch" ? "Video" : tag === "Read" ? "Reading" : "Article"}: ${title}]\n`)
     .replace(/<\/?[A-Z][A-Za-z]*\b[^>]*>/g, "")
     .replace(/\n{3,}/g, "\n\n")
