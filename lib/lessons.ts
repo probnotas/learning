@@ -82,10 +82,24 @@ function buildUnits(curriculum: Curriculum, lessons: LessonMeta[]): Unit[] {
     }));
 }
 
+const EMPTY_INDEX: CurriculumIndex = {
+  curriculum: { goal: "", learningStyle: "", orderingRule: "", tracks: [], prereqs: {}, graphText: "", mvp: [], mvpBudget: "", year2: "" },
+  lessons: [],
+  units: [],
+};
+
 export function loadIndex(): CurriculumIndex {
-  const curriculum = loadCurriculum();
-  const lessons = listLessons();
-  return { curriculum, lessons, units: buildUnits(curriculum, lessons) };
+  try {
+    const curriculum = loadCurriculum();
+    const lessons = listLessons();
+    return { curriculum, lessons, units: buildUnits(curriculum, lessons) };
+  } catch (err) {
+    // Every real page is prerendered at build time, where these files exist. At runtime on a
+    // serverless host (e.g. a 404 for an unknown URL) they may not be bundled, so the
+    // layout falls back to an empty index instead of crashing.
+    if (process.env.NEXT_PHASE === "phase-production-build") throw err;
+    return EMPTY_INDEX;
+  }
 }
 
 export function readLessonSource(id: string): string | null {

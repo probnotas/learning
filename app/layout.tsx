@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "Local-first robotics fundamentals, one lesson at a time.",
 };
 
-// CURRICULUM.md and lesson files are read on each request, so edits show up on refresh.
-export const dynamic = "force-dynamic";
+// CURRICULUM.md and lesson files are read at build time; every page is prerendered,
+// so nothing touches the filesystem at runtime (works on Vercel / any static host).
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const index = loadIndex();

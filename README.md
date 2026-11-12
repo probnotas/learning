@@ -22,7 +22,7 @@ Other scripts:
 |---|---|
 | `npm run check:content` | Validates every lesson: five sections present, 5–10 problems each with a solution, build files exist, **every reference solution passes its tests**, and every starter fails at least one. Run it after editing content. |
 | `node scripts/make-starter.mjs <lessonId>` | Regenerates a lesson's `starter.js` from its `solution.js` (see "Adding a lesson"). |
-| `npm run build && npm start` | Production build. |
+| `npm run build && npm start` | Production build: copies Monaco, then prerenders every page. |
 
 ## What's in it
 
@@ -52,7 +52,7 @@ Every full lesson's build ties back to the pendulum. The first one, in Month 1, 
 
 ## How CURRICULUM.md is used
 
-`lib/curriculum.ts` reads `CURRICULUM.md` on every request, so edits show up on refresh. It parses:
+`lib/curriculum.ts` reads `CURRICULUM.md`. In `npm run dev` it's re-read on every request, so edits show up on refresh. In a production build every page is prerendered, so edits need a rebuild (a redeploy on Vercel). It parses:
 
 - **Goal, learning style, ordering rule**: the `**Goal:**`, `**Learning style:**` and `**Ordering rule:**` paragraphs.
 - **Tracks and topics**: `## Track X — Name` headings, and topic bullets like `- **A1. Linear Algebra**`, with their sub-bullets as resources.
@@ -169,6 +169,34 @@ Things to know:
 ## The pendulum project
 
 `/projects/compliant-pendulum` embeds `public/playground/compliant-pendulum-playground.html` in a sandboxed iframe if that file exists, and shows drop-in instructions if it doesn't. Build the playground separately (single HTML file, vanilla JS + canvas) and put it at that path. The Month 2 resonance lesson and both Month 4 lessons link to it.
+
+## Deploying to Vercel
+
+The app is set up so a Vercel deploy is just the default Next.js build:
+
+1. In Vercel: **Add New → Project →** import this GitHub repo.
+2. Settings (the defaults are correct; only change them if a previous attempt edited them):
+   - **Framework Preset:** Next.js
+   - **Root Directory:** `./` (the repo root, where `package.json` and `CURRICULUM.md` live)
+   - **Build Command:** `npm run build` (or leave the default)
+   - **Install Command:** default (`npm install`)
+   - **Output Directory:** default (leave empty; *don't* set `out` or `public`)
+   - **Node.js Version:** 18.x or newer (20.x recommended)
+   - No environment variables are needed.
+3. Deploy. If a deploy fails, the error is in the **Build Logs**. Copy the first red error line and that's usually enough to fix it.
+
+Why it works on Vercel:
+
+- **Every page is prerendered at build time** (`generateStaticParams` for units, lessons and items), so `CURRICULUM.md` and `content/` are read only during the build. At runtime nothing touches the filesystem, so serverless functions can't fail on missing files. Unknown URLs get a proper 404.
+- **Monaco is copied in the build step itself** (`npm run build` runs `scripts/copy-monaco.mjs` first), so it doesn't depend on `postinstall` running or on Vercel's install cache. `public/monaco/` stays out of git.
+- The only server code left is `POST /api/generate-lesson` (the TODO stub), which needs no files or secrets.
+- Tested with a clean checkout: `npm ci`, then `npm run build`, then `next start` with `content/` and `CURRICULUM.md` deleted. All pages return 200, unknown URLs 404, and there are no server errors.
+
+After deploying:
+
+- **Progress is per site.** `localStorage` on `your-app.vercel.app` is separate from `localhost:3000`. To move progress, use the backup/restore console snippet in "How progress is stored".
+- **Content changes need a redeploy.** Push to the branch Vercel watches and it rebuilds automatically.
+- **It's a public URL** unless you turn on Vercel's Deployment Protection. There's no login, but progress stays in each visitor's own browser, so nobody sees yours.
 
 ## Privacy and network
 

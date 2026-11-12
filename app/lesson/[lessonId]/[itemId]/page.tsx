@@ -9,6 +9,12 @@ import { Callout, ProjectLink } from "@/components/mdx/Callout";
 import { Article, BuildItem, Choice, Q, Quiz, Read, Solution, Watch } from "@/components/mdx/Items";
 import { loadIndex, readBuildFiles, readLessonSource } from "@/lib/lessons";
 
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return loadIndex().lessons.flatMap((l) => l.items.map((it) => ({ lessonId: l.id, itemId: it.id })));
+}
+
 export default async function ItemPage({ params }: { params: { lessonId: string; itemId: string } }) {
   const index = loadIndex();
   const meta = index.lessons.find((l) => l.id === params.lessonId);
