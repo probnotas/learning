@@ -10,7 +10,7 @@ export default function CompliantPendulumPage() {
   const lessons = listLessons().filter((l) => project.lessons.includes(l.id));
 
   return (
-    <div>
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <p className="font-sans text-xs uppercase tracking-widest text-good">Project</p>
       <h1 className="mt-1 font-serif text-3xl text-ink-100">{project.title}</h1>
       <p className="mt-2 max-w-3xl font-serif text-ink-300">{project.summary}</p>

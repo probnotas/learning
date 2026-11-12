@@ -1,17 +1,20 @@
 // Pure progress / locking logic. No React, no storage — easy to reason about.
-import type { CurriculumIndex, LessonMeta } from "./types";
+import type { CurriculumIndex, ItemMeta, LessonMeta, Unit } from "./types";
 
-export type LessonState = "not_started" | "watching" | "problems_done" | "build_done" | "complete";
+export interface Answer {
+  values: string[]; // what you typed / picked
+  correct: boolean;
+  attempts: number;
+}
 
 export interface LessonProgress {
-  watched: Record<string, boolean>;
-  problems: Record<string, boolean>;
-  buildPassed: boolean; // tests passed at least once
-  buildDone: boolean;
-  completeFlag: boolean;
-  notes: string;
+  items: Record<string, boolean>; // articles / videos / readings marked done
+  answers: Record<string, Answer>; // quiz questions, by question id
+  buildPassed: boolean; // build tests passed at least once
   code?: string;
+  notes: string;
   override: boolean; // "unlock anyway"
+  lastItem?: string;
   lastVisited?: string;
 }
 
@@ -24,7 +27,7 @@ export interface BuildLogEntry {
 }
 
 export interface AppState {
-  version: 1;
+  version: 2;
   lessons: Record<string, LessonProgress>;
   activityDays: string[]; // local YYYY-MM-DD
   lastLessonId: string | null;
@@ -33,7 +36,7 @@ export interface AppState {
 }
 
 export const EMPTY_STATE: AppState = {
-  version: 1,
+  version: 2,
   lessons: {},
   activityDays: [],
   lastLessonId: null,
@@ -41,76 +44,56 @@ export const EMPTY_STATE: AppState = {
   buildLog: [],
 };
 
-export const EMPTY_LESSON: LessonProgress = {
-  watched: {},
-  problems: {},
-  buildPassed: false,
-  buildDone: false,
-  completeFlag: false,
-  notes: "",
-  override: false,
-};
+export const EMPTY_LESSON: LessonProgress = { items: {}, answers: {}, buildPassed: false, notes: "", override: false };
 
 export function lp(state: AppState, id: string): LessonProgress {
   return state.lessons[id] ?? EMPTY_LESSON;
 }
 
-export function watchDone(meta: LessonMeta, p: LessonProgress) {
-  return meta.watchItems.length > 0 && meta.watchItems.every((w) => p.watched[w.id]);
-}
-export function problemsDone(meta: LessonMeta, p: LessonProgress) {
-  return meta.problemIds.length > 0 && meta.problemIds.every((id) => p.problems[id]);
-}
-export function buildDone(meta: LessonMeta, p: LessonProgress) {
-  return meta.hasBuild && p.buildDone;
-}
-/** Learn-by-doing rule: watch/read AND problems AND build. */
-export function canComplete(meta: LessonMeta, p: LessonProgress) {
-  return watchDone(meta, p) && problemsDone(meta, p) && buildDone(meta, p);
-}
-export function isComplete(meta: LessonMeta, p: LessonProgress) {
-  return p.completeFlag && canComplete(meta, p);
+/** Quiz: every question answered correctly. Build: tests passed. Others: marked done. */
+export function itemDone(item: ItemMeta, p: LessonProgress): boolean {
+  if (item.draft) return false;
+  if (item.kind === "quiz") return item.questionIds.length > 0 && item.questionIds.every((q) => p.answers[q]?.correct);
+  if (item.kind === "build") return p.buildPassed;
+  return !!p.items[item.id];
 }
 
-export function lessonState(meta: LessonMeta, p: LessonProgress): LessonState {
-  if (isComplete(meta, p)) return "complete";
-  if (buildDone(meta, p)) return "build_done";
-  if (problemsDone(meta, p)) return "problems_done";
-  const anyWatched = meta.watchItems.some((w) => p.watched[w.id]);
-  const anyWork = Object.values(p.problems).some(Boolean) || p.buildPassed;
-  return anyWatched || anyWork ? "watching" : "not_started";
+export function quizScore(item: ItemMeta, p: LessonProgress): { right: number; total: number } {
+  return { right: item.questionIds.filter((q) => p.answers[q]?.correct).length, total: item.questionIds.length };
 }
 
-export const STATE_LABEL: Record<LessonState, string> = {
-  not_started: "Not started",
-  watching: "In progress",
-  problems_done: "Problems done",
-  build_done: "Build done",
-  complete: "Complete",
-};
+/** A lesson passes when every one of its items is done, including every quiz question right. */
+export function lessonPassed(meta: LessonMeta, p: LessonProgress): boolean {
+  return meta.items.length > 0 && meta.items.every((it) => itemDone(it, p));
+}
 
-/** Fraction of sub-tasks checked (watch items + problems + build). */
-export function subtaskFraction(meta: LessonMeta, p: LessonProgress): number {
-  const total = meta.watchItems.length + meta.problemIds.length + (meta.hasBuild ? 1 : 0);
-  if (total === 0) return 0;
-  const done =
-    meta.watchItems.filter((w) => p.watched[w.id]).length +
-    meta.problemIds.filter((id) => p.problems[id]).length +
-    (meta.hasBuild && p.buildDone ? 1 : 0);
-  return done / total;
+export function lessonFraction(meta: LessonMeta, p: LessonProgress): number {
+  if (!meta.items.length) return 0;
+  return meta.items.filter((it) => itemDone(it, p)).length / meta.items.length;
+}
+
+export function lessonStarted(meta: LessonMeta, p: LessonProgress): boolean {
+  return meta.items.some((it) => itemDone(it, p)) || Object.keys(p.answers).length > 0;
+}
+
+export function unitLessons(index: CurriculumIndex, unit: Unit): LessonMeta[] {
+  return unit.lessonIds.map((id) => index.lessons.find((l) => l.id === id)!).filter(Boolean);
+}
+
+/** Unit mastery = items done / items total across the unit's lessons. */
+export function unitMastery(index: CurriculumIndex, state: AppState, unit: Unit): number {
+  const items = unitLessons(index, unit).flatMap((l) => l.items.map((it) => itemDone(it, lp(state, l.id))));
+  return items.length ? items.filter(Boolean).length / items.length : 0;
 }
 
 export function topicComplete(index: CurriculumIndex, state: AppState, topicId: string): boolean {
   const lessons = index.lessons.filter((l) => l.topic === topicId);
-  return lessons.length > 0 && lessons.every((l) => isComplete(l, lp(state, l.id)));
+  return lessons.length > 0 && lessons.every((l) => lessonPassed(l, lp(state, l.id)));
 }
 
 export function topicTitle(index: CurriculumIndex, topicId: string): string {
-  for (const t of index.curriculum.tracks) {
-    const tp = t.topics.find((x) => x.id === topicId);
-    if (tp) return `${tp.id}. ${tp.title}`;
-  }
-  return topicId;
+  const u = index.units.find((x) => x.topic === topicId);
+  return u ? `Unit ${u.number}: ${u.title}` : topicId;
 }
 
 export interface LockInfo {
@@ -122,19 +105,17 @@ export interface LockInfo {
 export function lockInfo(index: CurriculumIndex, state: AppState, meta: LessonMeta): LockInfo {
   const reasons: string[] = [];
   for (const pre of index.curriculum.prereqs[meta.topic] ?? []) {
-    if (!topicComplete(index, state, pre)) reasons.push(`Finish topic ${topicTitle(index, pre)} first.`);
+    if (!topicComplete(index, state, pre)) reasons.push(`Pass every lesson in ${topicTitle(index, pre)}.`);
   }
-  // Within a topic, lessons go in order ("finish one resource before the next").
-  const siblings = index.lessons.filter((l) => l.topic === meta.topic);
+  // Within a unit, lessons go in order ("finish one resource before the next").
+  const siblings = index.lessons.filter((l) => l.topic === meta.topic).sort((a, b) => a.order - b.order);
   for (const s of siblings) {
     if (s.id === meta.id) break;
-    if (!isComplete(s, lp(state, s.id))) reasons.push(`Finish the earlier ${meta.topic} lesson "${s.title}" first.`);
+    if (!lessonPassed(s, lp(state, s.id))) reasons.push(`Pass "${s.title}" first.`);
   }
   for (const reqId of meta.requires) {
     const req = index.lessons.find((l) => l.id === reqId);
-    if (req && !isComplete(req, lp(state, req.id)) && !siblings.includes(req)) {
-      reasons.push(`Finish lesson "${req.title}" first.`);
-    }
+    if (req && !lessonPassed(req, lp(state, req.id)) && !siblings.includes(req)) reasons.push(`Pass "${req.title}" first.`);
   }
   const overridden = lp(state, meta.id).override && reasons.length > 0;
   return { locked: reasons.length > 0 && !overridden, reasons, overridden };
@@ -145,13 +126,13 @@ export function mvpLessons(index: CurriculumIndex): LessonMeta[] {
 }
 
 export function nextLesson(index: CurriculumIndex, state: AppState): LessonMeta | null {
-  const pending = mvpLessons(index).filter((l) => !isComplete(l, lp(state, l.id)));
+  const pending = mvpLessons(index).filter((l) => !lessonPassed(l, lp(state, l.id)));
   return pending.find((l) => !lockInfo(index, state, l).locked) ?? pending[0] ?? null;
 }
 
-export function currentMonth(index: CurriculumIndex, state: AppState): number | null {
-  const pending = mvpLessons(index).find((l) => !isComplete(l, lp(state, l.id)));
-  return pending ? pending.month : null;
+/** First item of a lesson that isn't done yet (or the first item). */
+export function nextItem(meta: LessonMeta, p: LessonProgress): ItemMeta | undefined {
+  return meta.items.find((it) => !it.draft && !itemDone(it, p)) ?? meta.items[0];
 }
 
 export function todayKey(d = new Date()): string {
@@ -172,4 +153,24 @@ export function streak(activityDays: string[], now = new Date()): number {
     cursor.setDate(cursor.getDate() - 1);
   }
   return n;
+}
+
+/** Parse a typed numeric answer: numbers, fractions, + - * / ^ ( ), pi, sqrt. Returns NaN if invalid. */
+export function parseNumber(input: string): number {
+  const s = input.trim().toLowerCase().replace(/π/g, "pi").replace(/−/g, "-").replace(/,/g, "");
+  if (!s || !/^[0-9.eE+\-*/^() a-z]*$/.test(s)) return NaN;
+  if (/[a-z]/.test(s.replace(/\b(pi|sqrt|e(?=[+\-]?\d))\b/g, "").replace(/\d[eE]/g, "0"))) return NaN;
+  try {
+    const expr = s.replace(/\^/g, "**").replace(/\bpi\b/g, "Math.PI").replace(/\bsqrt\b/g, "Math.sqrt");
+    const v = Function(`"use strict"; return (${expr});`)();
+    return typeof v === "number" ? v : NaN;
+  } catch {
+    return NaN;
+  }
+}
+
+/** Relative tolerance check (absolute when the expected value is 0). */
+export function closeEnough(value: number, expected: number, tol: number): boolean {
+  if (!isFinite(value)) return false;
+  return Math.abs(value - expected) <= tol * Math.max(Math.abs(expected), 1e-12) + (expected === 0 ? tol : 0);
 }

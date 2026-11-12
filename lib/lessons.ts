@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { loadCurriculum } from "./curriculum";
-import type { BuildFiles, CurriculumIndex, LessonMeta, WatchItem } from "./types";
+import type { BuildFiles, Curriculum, CurriculumIndex, ItemKind, ItemMeta, LessonMeta, Unit } from "./types";
 
 export const LESSONS_DIR = path.join(process.cwd(), "content", "lessons");
 export const BUILDS_DIR = path.join(process.cwd(), "content", "builds");
@@ -19,18 +19,27 @@ function buildDir(id: string) {
   return path.join(BUILDS_DIR, id);
 }
 
+const ITEM_KIND: Record<string, ItemKind> = { Article: "article", Watch: "video", Read: "reading", Quiz: "quiz", Build: "build" };
+
 function parseLesson(id: string): LessonMeta {
   const raw = fs.readFileSync(path.join(LESSONS_DIR, `${id}.mdx`), "utf8");
   const { data, content } = matter(raw);
   const topic = String(data.topic ?? "").toUpperCase();
 
-  const watchItems: WatchItem[] = [];
-  for (const m of content.matchAll(/<(Watch|Read)\b([^>]*?)\/?>/g)) {
+  const items: ItemMeta[] = [];
+  for (const m of content.matchAll(/<(Article|Watch|Read|Quiz|Build)\b([^>]*?)\/?>/g)) {
     const a = attrs(m[2]);
-    if (a.id) watchItems.push({ id: a.id, title: a.title ?? a.id, kind: m[1] === "Watch" ? "watch" : "read" });
+    const kind = ITEM_KIND[m[1]];
+    if (!a.id) continue;
+    let questionIds: string[] = [];
+    if (kind === "quiz" && !/\bdraft\b/.test(m[2])) {
+      const end = content.indexOf("</Quiz>", m.index);
+      const block = content.slice(m.index, end < 0 ? undefined : end);
+      questionIds = [...block.matchAll(/<Q\b[^>]*?\bid="([^"]+)"/g)].map((q) => q[1]);
+    }
+    const draft = /\bdraft\b/.test(m[2]) || (kind === "build" && !fs.existsSync(path.join(buildDir(id), "tests.js")));
+    items.push({ id: a.id, kind, title: a.title ?? a.id, draft, questionIds });
   }
-  const problemIds = [...content.matchAll(/<Problem\b[^>]*?\bid="([^"]+)"/g)].map((m) => m[1]);
-  const hasBuild = /<Build\b/.test(content) && fs.existsSync(path.join(buildDir(id), "tests.js"));
 
   return {
     id,
@@ -43,9 +52,7 @@ function parseLesson(id: string): LessonMeta {
     requires: Array.isArray(data.requires) ? data.requires.map(String) : [],
     hours: typeof data.hours === "number" ? data.hours : null,
     summary: String(data.summary ?? ""),
-    watchItems,
-    problemIds,
-    hasBuild,
+    items,
   };
 }
 
@@ -57,8 +64,28 @@ export function listLessons(): LessonMeta[] {
     .sort((a, b) => (a.month ?? 99) - (b.month ?? 99) || a.order - b.order);
 }
 
+/** Units in the order their first lesson appears on the path; Year-2 topics after. */
+function buildUnits(curriculum: Curriculum, lessons: LessonMeta[]): Unit[] {
+  const topics = curriculum.tracks.flatMap((t) => t.topics.map((tp) => ({ ...tp, trackTitle: t.title })));
+  const order: string[] = [];
+  for (const l of lessons) if (!order.includes(l.topic)) order.push(l.topic);
+  for (const t of topics) if (!order.includes(t.id)) order.push(t.id);
+  return order
+    .map((id) => topics.find((t) => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => !!t)
+    .map((t, i) => ({
+      topic: t.id,
+      number: i + 1,
+      title: t.title,
+      trackTitle: t.trackTitle,
+      lessonIds: lessons.filter((l) => l.topic === t.id).sort((a, b) => a.order - b.order).map((l) => l.id),
+    }));
+}
+
 export function loadIndex(): CurriculumIndex {
-  return { curriculum: loadCurriculum(), lessons: listLessons() };
+  const curriculum = loadCurriculum();
+  const lessons = listLessons();
+  return { curriculum, lessons, units: buildUnits(curriculum, lessons) };
 }
 
 export function readLessonSource(id: string): string | null {

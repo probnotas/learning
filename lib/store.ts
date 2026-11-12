@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { EMPTY_LESSON, EMPTY_STATE, todayKey, type AppState, type LessonProgress } from "./progress";
 
-export const STORAGE_KEY = "learnlab:v1";
+export const STORAGE_KEY = "learnlab:v2";
 
 let state: AppState = EMPTY_STATE;
 let loaded = false;
@@ -14,7 +14,7 @@ function readStorage(): AppState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY_STATE;
     const parsed = JSON.parse(raw);
-    if (parsed?.version !== 1) return EMPTY_STATE;
+    if (parsed?.version !== 2) return EMPTY_STATE;
     return { ...EMPTY_STATE, ...parsed };
   } catch {
     return EMPTY_STATE;

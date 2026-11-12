@@ -16,11 +16,19 @@ export const dynamic = "force-dynamic";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const index = loadIndex();
   return (
-    <html lang="en" className="dark">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before first paint (dark by default). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("learnlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-ink-950">
         <IndexProvider value={index}>
           <Nav />
-          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+          <main>{children}</main>
         </IndexProvider>
       </body>
     </html>

@@ -48,7 +48,7 @@ export function BuildPanel({ lessonId, files }: { lessonId: string; files: Build
     setResult(r);
     setRunning(false);
     const allPass = !r.error && r.results.length > 0 && r.results.every((t) => t.pass);
-    updateLesson(lessonId, (x) => ({ ...x, code, buildPassed: x.buildPassed || allPass, buildDone: x.buildDone || allPass }));
+    updateLesson(lessonId, (x) => ({ ...x, code, buildPassed: x.buildPassed || allPass }));
   };
 
   const reset = () => {
@@ -63,12 +63,12 @@ export function BuildPanel({ lessonId, files }: { lessonId: string; files: Build
       <div className="overflow-hidden rounded-md border border-ink-700">
         <div className="flex items-center justify-between border-b border-ink-700 bg-ink-900 px-3 py-1.5 text-xs text-ink-400">
           <span>build.js · JavaScript · runs in a sandboxed Web Worker</span>
-          <span>{p.buildPassed ? <span className="text-good">tests passed before ✓</span> : "Ctrl/⌘+Enter to run"}</span>
+          <span>{p.buildPassed ? <span className="text-good">passed ✓</span> : "Ctrl/⌘+Enter to run"}</span>
         </div>
         <Editor
           height="420px"
           defaultLanguage="javascript"
-          theme="vs-dark"
+          theme={typeof document !== "undefined" && document.documentElement.dataset.theme === "light" ? "vs" : "vs-dark"}
           value={code}
           onChange={onChange}
           onMount={(editor, monaco) => {
@@ -88,7 +88,7 @@ export function BuildPanel({ lessonId, files }: { lessonId: string; files: Build
           id={`run-${lessonId}`}
           onClick={run}
           disabled={running}
-          className="rounded-md bg-accent px-4 py-1.5 text-sm font-semibold text-ink-950 hover:brightness-110 disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-1.5 text-sm font-semibold text-ink-900 hover:brightness-110 disabled:opacity-60"
         >
           {running ? "Running…" : "▶ Run"}
         </button>

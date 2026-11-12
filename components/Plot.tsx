@@ -1,7 +1,7 @@
 "use client";
 import type { PlotData } from "@/lib/runner";
 
-const COLORS = ["#7cc4ff", "#f0a35e", "#7ad3a0", "#d79ef0", "#f08a8a", "#e8d77a"];
+const COLORS = ["#3b8fe8", "#f0883e", "#2fae6b", "#b86fe0", "#e05d5d", "#c9a300"];
 
 function niceRange(lo: number, hi: number): [number, number] {
   if (!isFinite(lo) || !isFinite(hi)) return [0, 1];
@@ -36,7 +36,7 @@ export function Plot({ data }: { data: PlotData }) {
         )}
         {ticks(y0, y1).map((v, i) => (
           <g key={`y${i}`}>
-            <line x1={L} x2={W - R} y1={sy(v)} y2={sy(v)} stroke="#212836" />
+            <line x1={L} x2={W - R} y1={sy(v)} y2={sy(v)} stroke="rgb(var(--ink-800))" />
             <text x={L - 6} y={sy(v) + 4} textAnchor="end" fontSize="10" className="fill-ink-400" fontFamily="ui-monospace">
               {fmt(v)}
             </text>
@@ -47,7 +47,7 @@ export function Plot({ data }: { data: PlotData }) {
             {fmt(v)}
           </text>
         ))}
-        {y0 < 0 && y1 > 0 && <line x1={L} x2={W - R} y1={sy(0)} y2={sy(0)} stroke="#43506a" />}
+        {y0 < 0 && y1 > 0 && <line x1={L} x2={W - R} y1={sy(0)} y2={sy(0)} stroke="rgb(var(--ink-600))" />}
         {data.opts.xlabel && (
           <text x={(L + W - R) / 2} y={H - 4} textAnchor="middle" fontSize="11" className="fill-ink-300" fontFamily="system-ui">
             {data.opts.xlabel}

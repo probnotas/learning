@@ -8,11 +8,11 @@ hours: 7
 summary: "Determinants tell you whether information survives a transformation. LU factorization is how you actually solve systems. Both decide whether a body change is even detectable."
 ---
 
-## Why this matters
+<Article id="why" title="Why this matters for your self-model">
 
 A forward model maps causes to effects: (state, motor command) → next state. Self-modeling constantly asks the reverse question. *Given what I just observed, what command or what body must have produced it?* That's solving $Ax = b$. Whether that question has a unique answer is decided by the determinant. If two different bodies, say mass $m$ and mass $1.5m$, produce the *same* observations under your excitation, the relevant matrix is singular, and no detector, however clever, can tell them apart. Some low-AUC results come from exactly this: a detection problem that was never identifiable under the data collected. This lesson gives you the tools to check that before you train anything.
 
-## Watch / Read
+</Article>
 
 <Watch id="v1" title="Ch 5 · Three-dimensional linear transformations" youtube="rHLEWRxRGiM" minutes={5} />
 
@@ -28,7 +28,7 @@ Determinant = how much area/volume scales. Zero means the transformation squashe
 This is the computational core of the course. Do the hand-worked LU examples with a pencil.
 </Read>
 
-## Core ideas
+<Article id="ideas" title="Key ideas: Ax = b and the determinant">
 
 - **$Ax = b$ asks "which input lands on $b$?"** Solving a linear system means inverting the transformation for one specific output.
 - **The determinant is the volume scale factor.** $|\det A| \gt 1$ stretches, $|\det A| \lt 1$ shrinks, and $\det A = 0$ flattens space, so some inputs become indistinguishable.
@@ -39,11 +39,15 @@ This is the computational core of the course. Do the hand-worked LU examples wit
 - **Don't compute $A^{-1}$; solve.** It's slower and less accurate. "Apply the inverse" in code means "call a solver".
 - **Inverse dynamics is a solve.** Given measured $\theta, \dot\theta, \ddot\theta$, recover the motor command or torque that produced them. This is the backbone of many self-model consistency checks.
 
-## Problem set
+</Article>
 
-<Problem id="p1" kind="compute" title="What the Euler step does to area">
+<Quiz id="practice" title="Practice: solving systems">
+
+<Q id="p1" title="What the Euler step does to area" answer="1.000981" labels="det A_d" tol="0.000005">
 
 From lesson 1, $A_d = \begin{bmatrix} 1 & 0.01 \\ -0.1981 & 0.999\end{bmatrix}$. Compute $\det A_d$. What does it say about how explicit Euler treats the pendulum's energy over many steps?
+
+*Enter $\det A_d$ (all the digits).*
 
 <Solution>
 
@@ -52,11 +56,13 @@ $\det A_d = 1\cdot 0.999 - 0.01\cdot(-0.1981) = 0.999 + 0.001981 = 1.000981$.
 Each step scales the area of any patch of $(\theta, \dot\theta)$ space by about $1.001$. The real damped pendulum should *shrink* areas (damping removes energy), so explicit Euler is injecting energy, about 0.1% in area per step. Over 1000 steps that's $1.000981^{1000} \approx 2.67\times$. This is the drift you saw in the lesson-1 plot; lesson 4 explains it with eigenvalues.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p2" kind="compute" title="Forward substitution">
+<Q id="p2" title="Forward substitution" answer="2;1;1.5" labels="y₁;y₂;y₃">
 
 Solve $Ly = b$ with $L = \begin{bmatrix} 2 & 0 & 0 \\ 1 & 3 & 0 \\ -1 & 2 & 4 \end{bmatrix}$, $b = [4, 5, 6]^\top$.
+
+*Enter $y$.*
 
 <Solution>
 
@@ -64,11 +70,13 @@ $y_1 = 4/2 = 2$. $y_2 = (5 - 1\cdot 2)/3 = 1$. $y_3 = (6 - (-1)(2) - 2\cdot 1)/4
 Check row 3: $-2 + 2 + 6 = 6$. ✓
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p3" kind="compute" title="LU by hand">
+<Q id="p3" title="LU by hand" answer="1;1" labels="x₁;x₂">
 
 Factor $A = \begin{bmatrix} 2 & 1 \\ 4 & 5 \end{bmatrix}$ as $LU$ (no pivoting), then solve $Ax = [3, 9]^\top$ using two substitutions.
+
+*Enter $x$.*
 
 <Solution>
 
@@ -76,11 +84,18 @@ Multiplier $\ell_{21} = 4/2 = 2$. Subtract $2\times$ row 1 from row 2: $U = \beg
 $Ly = b$: $y = [3,\; 9 - 6] = [3, 3]$. $Ux = y$: $x_2 = 1$, $x_1 = (3 - 1)/2 = 1$. So $x = [1, 1]$.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p4" kind="concept" title="A singular system">
+<Q id="p4" title="A singular system" choice="a">
 
 Let $A = \begin{bmatrix} 1 & 2 \\ 2 & 4 \end{bmatrix}$. Find $\det A$, the column space, and the null space. How many solutions does $Ax = [1, 2]^\top$ have? What about $Ax = [1, 0]^\top$?
+
+**How many solutions in each case?**
+
+<Choice v="a">$b = [1,2]$: infinitely many solutions. $b = [1,0]$: none.</Choice>
+<Choice v="b">$b = [1,2]$: exactly one. $b = [1,0]$: none.</Choice>
+<Choice v="c">$b = [1,2]$: none. $b = [1,0]$: infinitely many.</Choice>
+<Choice v="d">Both have exactly one solution.</Choice>
 
 <Solution>
 
@@ -88,11 +103,18 @@ $\det A = 4 - 4 = 0$. Both columns are multiples of $[1, 2]$, so the column spac
 $b = [1,2]$ is on the line, so there are infinitely many solutions: $x = [1, 0] + t[2,-1]$. $b = [1, 0]$ is off the line, so there are none.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p5" kind="concept" title="Identifiability: when mass and gravity look the same">
+<Q id="p5" title="Identifiability: when mass and gravity look the same" choice="b">
 
 You log the pendulum hanging freely with the motor held at $\theta_m = 0$ and only small swings. You try to estimate $p_1 = k/I$ and $p_2 = g/L$ separately from $\ddot\theta = -p_1\theta - p_2\sin\theta - (c/I)\dot\theta$. Why does this fail? Name two ways to fix the experiment.
+
+**Why does the fit fail?**
+
+<Choice v="a">The encoder is too noisy to measure $\ddot\theta$</Choice>
+<Choice v="b">Only the sum $p_1 + p_2$ affects the data: the two regressor columns are (nearly) identical</Choice>
+<Choice v="c">Damping hides the spring</Choice>
+<Choice v="d">The sampling rate is too low</Choice>
 
 <Solution>
 
@@ -101,11 +123,13 @@ With $\theta_m = 0$ the spring term is $-p_1\theta$, and for small angles $\sin\
 Fixes: (1) **drive the motor**, so $\theta_m - \theta$ is no longer proportional to $\theta$; (2) **swing to large angles**, where $\sin\theta$ differs from $\theta$. In self-modeling terms, *excitation determines what is identifiable*.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p6" kind="compute" title="Inverse dynamics">
+<Q id="p6" title="Inverse dynamics" answer="0.29989" labels="θm (rad)" tol="0.001">
 
 With $m=1$, $L=1$, $k=10$, $c=0.1$, $g=9.81$, you measure $\theta_a = 0.2$ rad, $\dot\theta_a = 0.5$ rad/s, $\ddot\theta_a = -1.0$ rad/s². What motor angle $\theta_m$ produced this?
+
+*Enter $\theta_m$.*
 
 <Solution>
 
@@ -115,11 +139,18 @@ $$\theta_m = \theta + \frac{I\ddot\theta + mgL\sin\theta + c\dot\theta}{k} = 0.2
 If your self-model's inverse-dynamics estimate of $\theta_m$ disagrees with the command you actually sent, something about the body (or the model) has changed. That residual is a simple fault detector.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p7" kind="concept" title="Why pivot?">
+<Q id="p7" title="Why pivot?" choice="a">
 
 Solve $\begin{bmatrix} 10^{-20} & 1 \\ 1 & 1 \end{bmatrix} x = \begin{bmatrix} 1 \\ 2 \end{bmatrix}$ by elimination *without* swapping rows, in 16-digit floating point. What goes wrong, and how does pivoting fix it?
+
+**What does elimination without row swaps give for $x_1$?**
+
+<Choice v="a">$x_1 = 0$: the important information was rounded away</Choice>
+<Choice v="b">$x_1 = 1$: no problem at all</Choice>
+<Choice v="c">$x_1 = 10^{20}$</Choice>
+<Choice v="d">Division by zero, so the result is NaN</Choice>
 
 <Solution>
 
@@ -127,16 +158,20 @@ Multiplier $= 10^{20}$. Row 2 becomes $[0,\; 1 - 10^{20}]$ with right side $2 - 
 Swapping rows first makes the pivot $1$ and the multiplier $10^{-20}$, so nothing large is created and nothing important gets rounded away. Your build demo prints both versions.
 
 </Solution>
-</Problem>
+</Q>
 
-## Build
+</Quiz>
+
+<Build id="build" title="Build: LU, determinants, inverse dynamics">
 
 You'll implement forward/back substitution, LU with partial pivoting, a determinant, and two "run it backwards" tools for the pendulum: `stepBackward` (undo a step of the forward model) and `inverseDynamics` (recover the motor command from measured motion). The demo rolls the model forward for 3 s, then rewinds it from the final state, and the dots should land exactly on the forward curve.
 
-<Build />
+
 
 <Callout title="Self-model connection">
 
 `inverseDynamics` is a complete, if crude, fault detector. Compare its output to the command you actually sent. On the nominal body the residual is near zero. If the true mass is $m + \Delta m$ but your model still assumes $m$, the residual works out to $-\Delta m\,L\,(L\ddot\theta_a + g\sin\theta_a)/k$. It oscillates, but it's *proportional to a signal you can compute*. Regress the residual on $L\ddot\theta_a + g\sin\theta_a$ and you recover the sign and size of $\Delta m$ at any drive frequency. An amplitude-based score can't do that. Keep it in mind for F3 (change detection).
 
 </Callout>
+
+</Build>

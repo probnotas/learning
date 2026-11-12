@@ -8,11 +8,11 @@ hours: 7
 summary: "A matrix is a function. One step of your pendulum's linearized dynamics is a matrix. So is the first layer of a neural forward model."
 ---
 
-## Why this matters
+<Article id="why" title="Why this matters for your self-model">
 
 Your self-model is a function $f(x_t, u_t) \to \hat{x}_{t+1}$: given the arm state and the motor command, predict the next state. For the compliant pendulum the state is a vector $x = [\theta_a, \dot\theta_a]$, and one Euler step of the linearized dynamics is *exactly* a matrix times that vector plus a matrix times the motor angle. A neural forward model has the same structure: matrix, vector, nonlinearity, repeat. When you bumped the mass and got AUC = 0.11, what physically changed was a handful of entries in that matrix. This lesson is about learning to read those entries as a description of the body. By the end you'll have written the forward pass yourself, and you'll see an MLP reproduce your physics model.
 
-## Watch / Read
+</Article>
 
 <Watch id="v1" title="Ch 1 · Vectors" youtube="fNk_zzaMoSs" minutes={10}>
 Watch for the three views of a vector (arrow, list, "thing you can add and scale"). Your robot state is the list view.
@@ -30,7 +30,7 @@ The key video. "Columns are where the basis vectors land." Pause and predict bef
 Free textbook from the University of Michigan. Course page: grizzle.robotics.umich.edu/education/rob101.
 </Read>
 
-## Core ideas
+<Article id="ideas" title="Key ideas: a matrix is a function">
 
 - **A vector is a list you treat as one object.** Your robot's state $x = [\theta_a, \dot\theta_a]$ is a vector; so is a sensor frame, a set of weights, or a batch of predictions.
 - **A matrix is a function that eats vectors.** Column $j$ of $M$ is where the $j$-th basis vector lands. So $Mx$ is "take $x_1$ of column 1, plus $x_2$ of column 2, …". That's the *column picture*.
@@ -41,11 +41,15 @@ Free textbook from the University of Michigan. Course page: grizzle.robotics.umi
 - **A neural-net layer is $Wx + b$ followed by a nonlinearity.** Without the nonlinearity, stacking layers collapses into one matrix: $W_2(W_1x + b_1) + b_2 = (W_2W_1)x + (W_2b_1 + b_2)$.
 - **Physical parameters live in matrix entries.** Mass, stiffness, and damping show up as specific entries of $A$ and $B$. "Which entries changed?" is a self-modeling question.
 
-## Problem set
+</Article>
 
-<Problem id="p1" kind="concept" title="Columns are where basis vectors land">
+<Quiz id="practice" title="Practice: matrices and forward models">
+
+<Q id="p1" title="Columns are where basis vectors land" answer="4;6" labels="first entry;second entry">
 
 Let $M = \begin{bmatrix} 2 & 1 \\ 0 & 3 \end{bmatrix}$. Without multiplying row-by-row, say where $\hat\imath = [1,0]$ and $\hat\jmath = [0,1]$ land, then use that to compute $M\,[1, 2]^\top$.
+
+*Enter $M\,[1, 2]^\top$.*
 
 <Solution>
 
@@ -54,12 +58,14 @@ Then $[1,2] = 1\cdot\hat\imath + 2\cdot\hat\jmath \mapsto 1\cdot[2,0] + 2\cdot[1
 Row-by-row check: $[2\cdot 1 + 1\cdot 2,\; 0\cdot1 + 3\cdot 2] = [4, 6]$. ✓
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p2" kind="compute" title="Shapes and parameter counts">
+<Q id="p2" title="Shapes and parameter counts" answer="98" labels="total parameters" tol="0.0001">
 
 A forward model takes $z = [\theta_a, \dot\theta_a, \theta_m]$ (3 numbers), has one hidden layer of 16 units, and outputs $[\hat\theta_a, \hat{\dot\theta}_a]$.
 (a) What are the shapes of $W_1, b_1, W_2, b_2$? (b) How many parameters in total?
+
+*Enter (b), the total number of parameters.*
 
 <Solution>
 
@@ -67,11 +73,18 @@ A forward model takes $z = [\theta_a, \dot\theta_a, \theta_m]$ (3 numbers), has 
 (b) $48 + 16 + 32 + 2 = 98$ parameters.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p3" kind="compute" title="Order matters">
+<Q id="p3" title="Order matters" choice="a">
 
 Let $R = \begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}$ (rotate 90°) and $S = \begin{bmatrix} 1 & 1 \\ 0 & 1 \end{bmatrix}$ (shear). Compute $RS$ and $SR$. Describe each in words.
+
+**Which is right?**
+
+<Choice v="a">$RS = \begin{bmatrix} 0 & -1 \\ 1 & 1 \end{bmatrix}$ and $SR \neq RS$</Choice>
+<Choice v="b">$RS = \begin{bmatrix} 1 & -1 \\ 1 & 0 \end{bmatrix}$ and $SR = RS$</Choice>
+<Choice v="c">$RS = SR = \begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}$</Choice>
+<Choice v="d">$RS = \begin{bmatrix} 1 & 1 \\ 0 & 1 \end{bmatrix}$</Choice>
 
 <Solution>
 
@@ -80,12 +93,19 @@ $SR = \begin{bmatrix} 1 & -1 \\ 1 & 0 \end{bmatrix}$: rotate first, then shear.
 They differ, so the order of operations changes the result. In a forward model, "apply the motor, then gravity" vs "gravity, then the motor" can matter in the same way once things stop being linear.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p4" kind="derive" title="Linearize the compliant pendulum">
+<Q id="p4" title="Linearize the compliant pendulum" choice="b">
 
 The arm obeys $I\ddot\theta_a = k(\theta_m - \theta_a) - mgL\sin\theta_a - c\,\dot\theta_a$ with $I = mL^2$.
 Using $\sin\theta \approx \theta$, write it as $\dot x = Ax + Bu$ with $x = [\theta_a, \dot\theta_a]^\top$ and $u = \theta_m$.
+
+**Which entry goes in row 2, column 1 of $A$?**
+
+<Choice v="a">$A_{21} = -k/I$</Choice>
+<Choice v="b">$A_{21} = -(k + mgL)/I$</Choice>
+<Choice v="c">$A_{21} = -mgL/I$</Choice>
+<Choice v="d">$A_{21} = -(k - mgL)/I$</Choice>
 
 <Solution>
 
@@ -99,11 +119,13 @@ $$
 Note that gravity adds to the spring stiffness: the effective stiffness is $k + mgL$, not $k$.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p5" kind="compute" title="One Euler step by hand">
+<Q id="p5" title="One Euler step by hand" answer="0.1;0.01019" labels="θa (rad);θ̇a (rad/s)" tol="0.002">
 
 With $m = 1$ kg, $L = 1$ m, $k = 10$ N·m/rad, $c = 0.1$ N·m·s/rad, $g = 9.81$, $\Delta t = 0.01$ s: compute $A_d = I + \Delta t A$ and $B_d = \Delta t B$. Then predict $x_{t+1}$ from $x_t = [0.1, 0]$ and $u_t = 0.3$ rad.
+
+*Enter $x_{t+1}$.*
 
 <Solution>
 
@@ -116,11 +138,18 @@ $x_{t+1} = [\,0.1 + 0.01\cdot 0,\; -0.1981\cdot 0.1 + 0.999\cdot 0 + 0.1\cdot 0.
 The angle doesn't move in one step (velocity was zero), but the spring is already accelerating the arm toward $\theta_m$.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p6" kind="concept" title="Why a linear network can't learn gravity">
+<Q id="p6" title="Why a linear network can't learn gravity" choice="c">
 
 Show that a two-layer network with *no* activation function is equivalent to a single layer. What does that imply about learning the pendulum at large swing angles?
+
+**Which statement is true?**
+
+<Choice v="a">A deeper linear network can fit $\sin\theta$ if it is wide enough</Choice>
+<Choice v="b">It reduces to a quadratic function of $z$</Choice>
+<Choice v="c">It reduces to a single affine map $W'z + b'$, so it can only fit a straight-line approximation of gravity</Choice>
+<Choice v="d">It reduces to the identity map</Choice>
 
 <Solution>
 
@@ -128,11 +157,13 @@ $W_2(W_1 z + b_1) + b_2 = (W_2 W_1) z + (W_2 b_1 + b_2) = W' z + b'$. Any depth 
 At large angles the gravity torque is $mgL\sin\theta_a$, which isn't linear in $\theta_a$. A purely linear model can only fit the best straight-line approximation and will be wrong at big swings. Nonlinearities like tanh are what let a network bend to fit $\sin\theta$.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p7" kind="compute" title="The mass bump, as matrix entries">
+<Q id="p7" title="The mass bump, as matrix entries" answer="-16.48" labels="new A₂₁" tol="0.002">
 
 Using the defaults from Problem 5, bump the mass to $1.5$ kg. Recompute the entries of $A$ and $B$ that change. Which entries change by the largest *fraction*? Which term is unaffected?
+
+*Enter the new $A_{21}$ (note which part of it did *not* change).*
 
 <Solution>
 
@@ -142,11 +173,13 @@ $A_{22} = -0.1/1.5 = -0.0667$ (was $-0.1$: $-33\%$). $B_2 = 10/1.5 = 6.667$ (was
 The $g/L$ part of $A_{21}$ doesn't change at all, because mass cancels out of gravity's effect on angular acceleration. Mass only shows up through the spring ($k/I$) and damping ($c/I$) terms. Keep this in mind: it's why the natural frequency drops less than you might expect.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p8" kind="estimate" title="How expensive is a forward pass?">
+<Q id="p8" title="How expensive is a forward pass?" answer="4416" labels="multiplies per pass" tol="0.0001">
 
 Count the multiplies in one forward pass of a $3 \to 64 \to 64 \to 2$ MLP (ignore biases and activations). At a 500 Hz control rate, how many multiplies per second is that?
+
+*Enter the multiplies per forward pass.*
 
 <Solution>
 
@@ -154,18 +187,22 @@ $3\cdot64 + 64\cdot64 + 64\cdot2 = 192 + 4096 + 128 = 4416$ multiplies per pass.
 At 500 Hz that's about $2.2 \times 10^6$ per second, which is trivial for any CPU. Forward models are cheap to *run*. Getting the data and fitting them is the hard part.
 
 </Solution>
-</Problem>
+</Q>
 
-## Build
+</Quiz>
+
+<Build id="build" title="Build: matrix ops → a pendulum forward model">
 
 You'll write the matrix operations from scratch, assemble the linearized pendulum's one-step forward model $x_{t+1} = A_d x_t + B_d u_t$, then **hand-build a neural network whose forward pass reproduces it**. The demo at the bottom of the file rolls out three forward models against the true nonlinear pendulum and plots them.
 
 Everything is plain JavaScript arrays (a matrix is an array of rows). Work top to bottom, press **Run**, and read the failing test messages.
 
-<Build />
+
 
 <Callout title="What to notice in the plot">
 
 All three models track each other for the first second, then the linear Euler model starts to drift and grow. That's explicit Euler slowly adding energy, which you'll explain with eigenvalues in lesson 4. The MLP matches the linear model almost exactly, because you *wrote its weights from physics*. Training a network means finding weights like these from data, and that's what a learned self-model does.
 
 </Callout>
+
+</Build>

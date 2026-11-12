@@ -8,11 +8,11 @@ hours: 7
 summary: "Most self-models are a least-squares fit. Here you identify the pendulum's physics from encoder data, then watch the fitted parameters jump when the body changes."
 ---
 
-## Why this matters
+<Article id="why" title="Why this matters for your self-model">
 
 You have far more measurements than unknowns: thousands of encoder samples, three physical parameters. No parameter set fits every sample exactly, so you pick the one that minimizes the squared error. That's least squares, and it's the core of system identification, of linear probes on world-model latents, and of the last layer of most regressors. For the compliant pendulum the dynamics are **linear in the parameters** even though they're nonlinear in the state, so a single solve gives you $k/I$, $g/L$ and $c/I$ from data. Bump the mass and refit on a sliding window: $k/I$ and $c/I$ drop by exactly $1/1.5$ while $g/L$ stays put. That's a body-change detector whose output is a *physical diagnosis*, not just a score.
 
-## Watch / Read
+</Article>
 
 <Watch id="v1" title="Ch 9 · Dot products and duality" youtube="LyGKycYT2v0" minutes={14}>
 Least squares is a statement about dot products: the best fit leaves a residual that is perpendicular (dot product zero) to every column.
@@ -22,7 +22,7 @@ Least squares is a statement about dot products: the best fit leaves a residual 
 Chapter 8 is the heart of it. §8.3's regression examples are worth redoing in the code editor below.
 </Read>
 
-## Core ideas
+<Article id="ideas" title="Key ideas: least squares">
 
 - **Overdetermined means more equations than unknowns.** $Ax = y$ with $A$ tall usually has no exact solution. Instead you minimize $\|Ax - y\|^2$.
 - **The best fit is a projection.** $A\hat x$ is the point in the column space closest to $y$. The residual $r = y - A\hat x$ is perpendicular to every column: $A^\top r = 0$.
@@ -33,11 +33,15 @@ Chapter 8 is the heart of it. §8.3's regression examples are worth redoing in t
 - **Sliding windows track change.** Refit on the last $N$ samples. Short windows react fast but are noisy; long windows are smooth but slow to react. It's the same trade-off as in CUSUM (F3).
 - **Derivatives of noisy data are the real enemy.** Acceleration from a twice-differenced encoder is extremely noisy (Problem 6). Clean simulated data hides this.
 
-## Problem set
+</Article>
 
-<Problem id="p1" kind="compute" title="A three-point line fit">
+<Quiz id="practice" title="Practice: least squares and identification">
+
+<Q id="p1" title="A three-point line fit" answer="7/6;0.5" labels="a;b" tol="0.001">
 
 Fit $y = a + bt$ to the points $(0, 1), (1, 2), (2, 2)$ using the normal equations. Then check that the residuals sum to zero and are orthogonal to $t$.
+
+*Enter $a$ and $b$ (fractions like 7/6 are fine).*
 
 <Solution>
 
@@ -46,22 +50,36 @@ $\det = 6$, so $a = (5\cdot5 - 3\cdot 6)/6 = 7/6$ and $b = (3\cdot 6 - 3\cdot 5)
 Residuals: $1 - 7/6 = -1/6$, $2 - 5/3 = 1/3$, $2 - 13/6 = -1/6$. Sum: $0$ ✓. Dot with $t = [0,1,2]$: $0 + 1/3 - 1/3 = 0$ ✓.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p2" kind="concept" title="Why perpendicular?">
+<Q id="p2" title="Why perpendicular?" choice="c">
 
 Explain in one picture-level paragraph why the best-fit residual must be perpendicular to every column of $A$.
+
+**Which explanation is right?**
+
+<Choice v="a">Because $A^\top A$ is always symmetric</Choice>
+<Choice v="b">Because residuals always sum to zero</Choice>
+<Choice v="c">Because the closest point of a flat subspace to $y$ is the foot of the perpendicular; any component along a column could be removed to get closer</Choice>
+<Choice v="d">Because $y$ has unit length</Choice>
 
 <Solution>
 
 $A\hat x$ can be any point in the column space, which is a flat subspace. The closest point of a flat subspace to $y$ is the foot of the perpendicular dropped from $y$. If the residual had any component *along* the subspace, you could slide $A\hat x$ in that direction and get closer. So at the optimum there's no component along any column: $A^\top r = 0$.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p3" kind="derive" title="The pendulum as a regression">
+<Q id="p3" title="The pendulum as a regression" choice="a">
 
 Starting from $I\ddot\theta = k(\theta_m - \theta) - mgL\sin\theta - c\dot\theta$, write one row of the regression $y = Ax$ for one sample. What are $x$, the row of $A$, and $y$?
+
+**Which is the regression?**
+
+<Choice v="a">$x = [k/I, g/L, c/I]$, row $= [\theta_m - \theta, -\sin\theta, -\dot\theta]$, $y = \ddot\theta$</Choice>
+<Choice v="b">$x = [k, g, c]$, row $= [\theta_m, -\theta, -\dot\theta]$, $y = \ddot\theta$</Choice>
+<Choice v="c">$x = [k/I, g/L, c/I]$, row $= [\theta_m, \sin\theta, \dot\theta]$, $y = \theta$</Choice>
+<Choice v="d">$x = [m, L, k]$, row $= [\theta, \dot\theta, \ddot\theta]$, $y = \theta_m$</Choice>
 
 <Solution>
 
@@ -70,11 +88,13 @@ $x = [k/I,\; g/L,\; c/I]$, row $= [\theta_m - \theta,\; -\sin\theta,\; -\dot\the
 Note that $mgL/I = g/L$: mass cancels out of the gravity term.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p4" kind="compute" title="Parameter signatures of different body changes">
+<Q id="p4" title="Parameter signatures of different body changes" answer="2.5;4.905;0.025" labels="k/I;g/L;c/I">
 
 Starting from $m = 1$, $L = 1$, $k = 10$, $c = 0.1$, give $[k/I, g/L, c/I]$ after (a) the mass is multiplied by 1.5, and (b) the length is doubled. Could a self-model tell these two faults apart?
+
+*Enter the parameters for (b), length doubled.*
 
 <Solution>
 
@@ -84,49 +104,69 @@ Nominal: $[10, 9.81, 0.1]$.
 Yes: the *pattern* of parameter changes is a fingerprint of the fault. That's diagnosis, not just detection.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p5" kind="concept" title="Excitation">
+<Q id="p5" title="Excitation" choice="d">
 
 Your sliding-window fit is rock solid during an energetic multi-sine drive but swings wildly when the robot holds still. Why? What does $A^\top A$ look like when the robot is still?
+
+**Why?**
+
+<Choice v="a">The solver has a bug</Choice>
+<Choice v="b">Noise is larger when the robot is still</Choice>
+<Choice v="c">Gravity changes direction</Choice>
+<Choice v="d">The columns of $A$ are tiny or proportional, so $A^\top A$ is nearly singular</Choice>
 
 <Solution>
 
 When the robot holds still, $\theta$, $\dot\theta$ and $\theta_m - \theta$ are all near zero or constant. The columns of $A$ are tiny or proportional to each other, so $A^\top A$ is nearly singular and noise dominates the solve. Least squares can only learn about directions the data actually varies in. Practical fix: only update the self-model when the data is informative (watch the smallest eigenvalue of $A^\top A$), or add a prior (regularization).
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p6" kind="estimate" title="Differentiating an encoder twice">
+<Q id="p6" title="Differentiating an encoder twice" answer="612" labels="std (rad/s²)" tol="0.02">
 
 Encoder noise is $\sigma = 10^{-3}$ rad (independent per sample) at $\Delta t = 0.002$ s. Estimate the noise standard deviation of $\ddot\theta \approx (\theta_{i+1} - 2\theta_i + \theta_{i-1})/\Delta t^2$. Compare it to the true acceleration amplitude $\approx 2.7$ rad/s² for a 0.3 rad swing at 3 rad/s.
+
+*Enter the acceleration noise standard deviation.*
 
 <Solution>
 
 Variance $= (1 + 4 + 1)\sigma^2/\Delta t^4$, so std $= \sqrt6\,\sigma/\Delta t^2 = 2.449\times10^{-3}/4\times10^{-6} \approx 612$ rad/s². The noise is more than **200× the signal**. Raw double differencing is useless here. You'd low-pass filter first, fit in the velocity domain, or integrate the model instead of differentiating the data. The clean demo below hides this, so keep it in mind.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p7" kind="concept" title="Window length">
+<Q id="p7" title="Window length" choice="b">
 
 You refit every 0.5 s on a window of the last $W$ seconds. After the mass bump at $t_0$, roughly when does the estimate fully reflect the new mass? What do you trade by shrinking $W$?
+
+**When does the estimate fully reflect the new mass?**
+
+<Choice v="a">Immediately at $t_0$</Choice>
+<Choice v="b">At $t_0 + W$, once the window holds only post-bump data</Choice>
+<Choice v="c">At $t_0 + W/2$</Choice>
+<Choice v="d">Never; windows always mix old and new data</Choice>
 
 <Solution>
 
 The window is a mix of old and new data until it contains only post-bump samples, at $t_0 + W$. Before that, the estimate sits somewhere in between. Smaller $W$ means faster detection but fewer samples, so higher variance (and worse conditioning when excitation is weak). This detection-delay versus false-alarm trade-off is exactly what CUSUM and GLR (F3) formalize.
 
 </Solution>
-</Problem>
+</Q>
 
-## Build
+</Quiz>
+
+<Build id="build" title="Build: identify the pendulum, watch the mass bump">
 
 You'll implement `transpose`, normal-equation least squares, the pendulum regressor, a parameter fit, a residual monitor, and a sliding-window refit. The simulator logs only encoder angles; velocity and acceleration come from finite differences. The demo bumps the mass ×1.5 at $t = 10$ s and plots the self-model's estimates over time.
 
-<Build />
+
 
 <Callout title="What to notice">
 
 The $g/L$ trace stays flat through the bump while $k/I$ steps down by $1/1.5$. The fitted model doesn't just say "something changed", it says "the inertia went up by 50%". Then look at the last line of output: with no drive and small swings, the spring and gravity columns are almost perfectly parallel. That's Problem 5 of the last lesson, now visible in numbers.
 
 </Callout>
+
+</Build>

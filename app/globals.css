@@ -2,40 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens (RGB triplets so Tailwind opacity modifiers work).
+   "ink-950" is always the page background and "ink-100" the strongest text. */
 :root {
+  color-scheme: light;
+  --ink-950: 247 248 250;
+  --ink-900: 255 255 255;
+  --ink-850: 241 243 246;
+  --ink-800: 232 235 240;
+  --ink-700: 214 218 226;
+  --ink-600: 183 190 204;
+  --ink-400: 95 106 125;
+  --ink-300: 61 71 87;
+  --ink-200: 33 41 54;
+  --ink-100: 16 21 29;
+  --accent: 24 101 242;
+  --accent-dim: 152 186 247;
+  --good: 31 150 84;
+  --warn: 176 110 0;
+  --bad: 214 41 22;
+  --nav: 10 42 102;
+}
+[data-theme="dark"] {
   color-scheme: dark;
-}
-html,
-body {
-  background: #0e1116;
-  color: #d5dbe5;
-}
-body {
-  @apply font-serif antialiased;
+  --ink-950: 14 17 22;
+  --ink-900: 20 25 34;
+  --ink-850: 26 32 43;
+  --ink-800: 33 40 54;
+  --ink-700: 46 55 71;
+  --ink-600: 67 80 106;
+  --ink-400: 138 150 171;
+  --ink-300: 179 188 203;
+  --ink-200: 213 219 229;
+  --ink-100: 238 241 246;
+  --accent: 124 196 255;
+  --accent-dim: 61 111 153;
+  --good: 122 211 160;
+  --warn: 240 198 116;
+  --bad: 240 138 138;
+  --nav: 20 25 34;
 }
 
-/* Lesson typography: serif body, sans headings, calm contrast. */
+html,
+body {
+  background: rgb(var(--ink-950));
+  color: rgb(var(--ink-200));
+}
+body {
+  @apply font-sans antialiased;
+}
+
+/* Lesson typography: serif body, sans headings. */
 .lesson-prose {
-  --tw-prose-invert-body: #d5dbe5;
-  --tw-prose-invert-headings: #eef1f6;
-  --tw-prose-invert-links: #7cc4ff;
-  --tw-prose-invert-bold: #eef1f6;
-  --tw-prose-invert-code: #f0c674;
-  --tw-prose-invert-bullets: #43506a;
-  --tw-prose-invert-hr: #2e3747;
-  --tw-prose-invert-quotes: #b3bccb;
-  --tw-prose-invert-pre-bg: #141922;
+  --tw-prose-body: rgb(var(--ink-200));
+  --tw-prose-headings: rgb(var(--ink-100));
+  --tw-prose-links: rgb(var(--accent));
+  --tw-prose-bold: rgb(var(--ink-100));
+  --tw-prose-code: rgb(var(--warn));
+  --tw-prose-bullets: rgb(var(--ink-600));
+  --tw-prose-counters: rgb(var(--ink-400));
+  --tw-prose-hr: rgb(var(--ink-700));
+  --tw-prose-quotes: rgb(var(--ink-300));
+  --tw-prose-pre-bg: rgb(var(--ink-850));
+  --tw-prose-pre-code: rgb(var(--ink-200));
+  --tw-prose-th-borders: rgb(var(--ink-700));
+  --tw-prose-td-borders: rgb(var(--ink-800));
+  @apply font-serif;
   font-size: 1.075rem;
   line-height: 1.75;
 }
-.lesson-prose h2 {
-  @apply mt-14 border-b border-ink-800 pb-2 font-sans text-xl font-semibold tracking-tight;
-}
-.lesson-prose > h2:first-child {
-  @apply mt-0;
-}
+.lesson-prose h2,
 .lesson-prose h3 {
   @apply font-sans;
+}
+.lesson-prose > :first-child {
+  margin-top: 0;
 }
 .lesson-prose code::before,
 .lesson-prose code::after {
@@ -44,15 +85,10 @@ body {
 .lesson-prose :not(pre) > code {
   @apply rounded bg-ink-800 px-1 py-0.5 font-mono text-[0.85em] font-normal;
 }
-.lesson-prose pre {
-  @apply border border-ink-800 font-mono text-sm;
-}
-.problem-body > :first-child,
-.callout-body > :first-child {
+.tight > :first-child {
   margin-top: 0;
 }
-.problem-body > :last-child,
-.callout-body > :last-child {
+.tight > :last-child {
   margin-bottom: 0;
 }
 .katex {

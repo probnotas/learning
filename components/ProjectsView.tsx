@@ -29,7 +29,7 @@ export function ProjectsView() {
     if (confirm("Delete this log entry?")) update((s) => ({ ...s, buildLog: s.buildLog.filter((e) => e.id !== id) }), { activity: false });
   };
 
-  const builds = index.lessons.filter((l) => l.hasBuild);
+  const builds = index.lessons.filter((l) => l.items.some((i) => i.kind === "build" && !i.draft));
 
   return (
     <div className="space-y-12">
@@ -73,7 +73,7 @@ export function ProjectsView() {
                 </option>
               ))}
             </select>
-            <button onClick={add} className="ml-auto rounded-md bg-accent px-3 py-1.5 font-semibold text-ink-950">
+            <button onClick={add} className="ml-auto rounded-md bg-accent px-3 py-1.5 font-semibold text-ink-900">
               Add entry
             </button>
           </div>
@@ -106,12 +106,12 @@ export function ProjectsView() {
             const p = lp(state, l.id);
             return (
               <li key={l.id} className="flex items-center justify-between gap-2 px-4 py-2">
-                <Link href={`/lesson/${l.id}#build`} className="truncate text-ink-200 hover:text-ink-100">
+                <Link href={`/lesson/${l.id}/build`} className="truncate text-ink-200 hover:text-ink-100">
                   <span className="mr-2 font-mono text-xs text-ink-400">{l.topic}</span>
                   {l.title}
                 </Link>
-                <span className={`text-xs ${p.buildDone ? "text-good" : p.code ? "text-warn" : "text-ink-400"}`}>
-                  {p.buildDone ? "✓ done" : p.code ? "in progress" : "not started"}
+                <span className={`text-xs ${p.buildPassed ? "text-good" : p.code ? "text-warn" : "text-ink-400"}`}>
+                  {p.buildPassed ? "✓ passed" : p.code ? "in progress" : "not started"}
                 </span>
               </li>
             );

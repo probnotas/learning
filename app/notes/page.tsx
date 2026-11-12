@@ -1,4 +1,8 @@
 import { NotesView } from "@/components/NotesView";
 export default function NotesPage() {
-  return <NotesView />;
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <NotesView />
+    </div>
+  );
 }

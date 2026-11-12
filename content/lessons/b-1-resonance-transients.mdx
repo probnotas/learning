@@ -8,11 +8,11 @@ hours: 8
 summary: "Feynman chapters 23–25. Resonance curves, Q, transients and superposition, ending in a quantitative account of why an amplitude-based mass-bump detector can score far below chance."
 ---
 
-## Why this matters
+<Article id="why" title="Why this matters: the AUC = 0.11 result">
 
 This is the lesson where AUC = 0.11 stops being mysterious. A heavier arm moves the resonance from $\omega_n = 4.45$ to $4.06$ rad/s *and* lowers the gain $k/I$. Whether the steady-state amplitude goes **up or down** after the bump depends on where the drive frequency sits: in the undamped limit, amplitude grows only for drive frequencies between $\sqrt{g/L} \approx 3.13$ rad/s and a point between the two resonances, and shrinks everywhere else. A detector that assumes "bump means amplitude increases" is wrong-signed for most frequencies, so its AUC lands well below 0.5. On top of that, the pendulum is so lightly damped that a 2-second window after the bump measures a *transient* (ringing at the new $\omega_n$ beating against the drive), not a steady state. Feynman's chapters 23–25 give you every piece. The build reassembles them into the experiment.
 
-## Watch / Read
+</Article>
 
 <Read id="r1" title="Feynman Lectures Vol. I, Ch. 23 · Resonance" href="https://www.feynmanlectures.caltech.edu/I_23.html" where="23-1 Complex numbers and harmonic motion, 23-2 The forced oscillator with damping (the key section), 23-3 Electrical resonance, 23-4 Resonance in nature. Spend most of your time on 23-2 and its resonance-curve figure.">
 Map his $m, \gamma, \omega_0$ onto your $I$, $c/I$, $\sqrt{(k + mgL)/I}$ as you read.
@@ -26,7 +26,7 @@ This is the chapter that explains why "steady state" takes a minute at your damp
 Superposition is why a multi-sine drive identifies the system at several frequencies at once (the least-squares lesson used this).
 </Read>
 
-## Core ideas
+<Article id="ideas" title="Key ideas: resonance and transients">
 
 - **The resonance curve is $|H(i\omega)|$.** It peaks near $\omega_0$. Its height is set by damping, and its width (the half-power bandwidth) is $\gamma = c/I$.
 - **$Q = \omega_0/\gamma$ measures sharpness.** It's also roughly the number of radians of oscillation it takes to lose $1/e$ of the energy. Your pendulum: $Q \approx 44$, a very sharp peak.
@@ -37,11 +37,15 @@ Superposition is why a multi-sine drive identifies the system at several frequen
 - **A measurement window must span whole periods.** At $\omega = 2$ rad/s one drive period is $\pi$ s, so "max − min over the last 2 s" misses part of the cycle and depends on phase, even with no body change at all.
 - **Amplitude-based detectors are frequency-dependent by construction.** They're informative but sign-ambiguous, which is how you get AUC ≪ 0.5. Direction-agnostic scores ($|\Delta|$) or model-based residuals fix the sign problem; waiting out the transient fixes the timing problem.
 
-## Problem set
+</Article>
 
-<Problem id="p1" kind="compute" title="Two definitions of Q">
+<Quiz id="practice" title="Practice: resonance and the mass bump">
+
+<Q id="p1" title="Two definitions of Q" answer="44.5" labels="Q" tol="0.01">
 
 Defaults: $m = L = 1$, $k = 10$, $c = 0.1$. Compute $Q = \omega_0/\gamma$ with the gravity-inclusive $\omega_0$. Compare to $Q = \sqrt{k\,mL^2}/c$ (a formula that leaves gravity out). Which matches the actual peak sharpness?
+
+*Enter the gravity-inclusive $Q$.*
 
 <Solution>
 
@@ -49,22 +53,26 @@ $\gamma = c/I = 0.1$ s⁻¹ and $\omega_0 = 4.4508$, so $Q = 44.5$. The gravity-
 The gravity-inclusive one is right: $Q = \sqrt{\kappa I}/c$ with $\kappa = k + mgL$. Using the wrong stiffness underestimates the resonance's sharpness by about 30%.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p2" kind="compute" title="How wide is the peak, and how far does the bump move it?">
+<Q id="p2" title="How wide is the peak, and how far does the bump move it?" answer="0.1;0.39" labels="bandwidth (rad/s);resonance shift (rad/s)" tol="0.03">
 
 The half-power bandwidth is $\Delta\omega \approx \gamma$. Compute it at the defaults, and compare it with how far the mass bump moves the resonance.
+
+*Enter the bandwidth and how far the bump moves $\omega_n$.*
 
 <Solution>
 
 $\Delta\omega \approx 0.1$ rad/s. The bump moves $\omega_n$ from 4.451 to 4.059 rad/s, a shift of 0.39 rad/s, about **four bandwidths**. If you were driving on the old peak, after the bump you're far down its flank. That's why the response to a mass change is so dramatic near resonance and so frequency-dependent.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p3" kind="estimate" title="Settling time">
+<Q id="p3" title="Settling time" answer="78" labels="settling time (s)" tol="0.03">
 
 Transients decay like $e^{-\gamma t/2}$. At the defaults, how long until a transient is below 2% of its initial size? What does this imply for "steady-state amplitude over the last 2 s" measured shortly after a bump?
+
+*Enter the time to 2%.*
 
 <Solution>
 
@@ -72,11 +80,18 @@ $e^{-0.05t} = 0.02 \Rightarrow t = \ln 50/0.05 \approx 78$ s.
 A 2-second window started anywhere within about a minute of the bump measures the transient, not the new steady state. Its value depends on the phase of the motion at the instant of the bump, which is effectively random from trial to trial. That adds noise and bias to every amplitude-based score.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p4" kind="derive" title="When does a heavier arm swing more?">
+<Q id="p4" title="When does a heavier arm swing more?" choice="a">
 
 Undamped, below both resonances, the steady amplitude is $\dfrac{(k/I)A}{\omega_0^2 - \omega^2}$ with $\omega_0^2 = k/I + g/L$. Let $I \to I' \gt I$. Show that the amplitude increases if and only if $\omega^2 \gt g/L$.
+
+**What do you find?**
+
+<Choice v="a">Amplitude increases iff $\omega^2 \gt g/L$</Choice>
+<Choice v="b">Amplitude increases iff $\omega^2 \lt g/L$</Choice>
+<Choice v="c">Amplitude always increases below resonance</Choice>
+<Choice v="d">Amplitude always decreases below resonance</Choice>
 
 <Solution>
 
@@ -86,11 +101,18 @@ Since $I - I' \lt 0$, this holds iff $g/L - \omega^2 \lt 0$, i.e. $\omega \gt \s
 Above both resonances the same algebra shows the amplitude *always* decreases. So the bump raises the amplitude only in a band from $\sqrt{g/L}$ up to somewhere between the two resonances. A drive at 3 rad/s sits just below that band, so amplitude drops slightly.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p5" kind="compute" title="Before and after, with damping">
+<Q id="p5" title="Before and after, with damping" choice="b">
 
 Using $A\,|H(i\omega)|$ at the defaults ($c = 0.1$, $A = 0.3$), the amplitudes before → after a ×1.5 mass bump are, at $\omega = 2, 3, 4, 5, 6$ rad/s: 0.190 → 0.160, 0.277 → 0.267, 0.783 → 3.66, 0.575 → 0.234, 0.185 → 0.102. Verify one of them by hand. If drive frequencies were drawn uniformly from 1 to 8 rad/s, roughly what fraction would show an *increase*?
+
+**Roughly what fraction of drive frequencies show an increase?**
+
+<Choice v="a">About 50%</Choice>
+<Choice v="b">About 17%</Choice>
+<Choice v="c">About 83%</Choice>
+<Choice v="d">None</Choice>
 
 <Solution>
 
@@ -98,22 +120,31 @@ At $\omega = 4$ after the bump: $I = 1.5$, $\kappa = 24.715$. Denominator $= 24.
 The increase band is roughly 3.13 to ~4.3 rad/s, about 1.2 rad/s out of 7, so **~17%** of frequencies. A detector betting on "increase" is wrong about 83% of the time, before noise and transients.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p6" kind="compute" title="Beats after the bump">
+<Q id="p6" title="Beats after the bump" answer="5.9" labels="beat period (s)" tol="0.03">
 
 After the bump at a 3 rad/s drive, the free transient rings near the new $\omega_n \approx 4.06$ rad/s. What beat period do you expect in the arm's envelope? Compare it to a 2-s scoring window.
+
+*Enter the beat period.*
 
 <Solution>
 
 Beat angular frequency $= |4.06 - 3| = 1.06$ rad/s, so the beat period is $2\pi/1.06 \approx 5.9$ s. A 2-second window catches a third of a beat cycle, so the measured "amplitude" swings up or down depending on where in the beat it falls. Same bump, different window timing, different sign.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p7" kind="concept" title="Reading an AUC of 0.11">
+<Q id="p7" title="Reading an AUC of 0.11" choice="c">
 
 An AUC of 0.11 means that 89% of the time, a randomly chosen *no-bump* trial scored higher than a randomly chosen *bump* trial. What does that tell you about the score? Why is "just flip the sign" a fragile fix, and what are two better ones?
+
+**Which reading is right?**
+
+<Choice v="a">The score is pure noise</Choice>
+<Choice v="b">Flip the sign and the detector is fixed for good</Choice>
+<Choice v="c">The score is informative but wrong-signed for this distribution of drive frequencies; use a direction-agnostic score or a model residual</Choice>
+<Choice v="d">The labels were swapped</Choice>
 
 <Solution>
 
@@ -122,11 +153,18 @@ Flipping the sign gives 0.89 *only for that same distribution of drive frequenci
 Better: (1) a direction-agnostic score such as $|\Delta\text{amplitude}|$ or a two-sided test, and (2) a **model-based residual**: predict the response with the nominal self-model, score the prediction error (or the refitted $k/I$ from the least-squares lesson). Its sign doesn't depend on the drive frequency. Also wait out (or model) the transient instead of scoring a 2-s window right after the event.
 
 </Solution>
-</Problem>
+</Q>
 
-<Problem id="p8" kind="concept" title="Superposition, and its limits">
+<Q id="p8" title="Superposition, and its limits" choice="d">
 
 Feynman 25-2: for a linear system, the response to $\theta_m = a_1\sin\omega_1 t + a_2\sin\omega_2 t$ is the sum of the individual responses. Why is that useful for system identification? Name a case where it fails for your pendulum.
+
+**Which is right?**
+
+<Choice v="a">Superposition never applies to pendulums</Choice>
+<Choice v="b">It fails when damping is large</Choice>
+<Choice v="c">It fails at low drive frequencies</Choice>
+<Choice v="d">It lets one multi-sine run measure many frequencies at once, and fails at large swings where $\sin\theta \neq \theta$</Choice>
 
 <Solution>
 
@@ -134,13 +172,15 @@ One experiment with a multi-sine drive measures $H(i\omega)$ at several frequenc
 It fails when the arm swings large ($\sin\theta \neq \theta$): frequencies mix, harmonics appear, and the resonance shifts with amplitude. Near resonance at the defaults, the linear model predicts 6.7 rad, deep in the nonlinear regime, so superposition is not trustworthy there.
 
 </Solution>
-</Problem>
+</Q>
 
-## Build
+</Quiz>
+
+<Build id="build" title="Build: resonance curves and the AUC experiment">
 
 You'll measure amplitude from a time series, build a resonance curve by simulation, implement the naive before/after amplitude score, compute an AUC, and predict the sign of the amplitude change from linear theory. The demo uses the **full nonlinear** pendulum with encoder noise. Damping is raised to $c = 0.3$ so each run settles in ~30 s and the whole experiment runs in about a second.
 
-<Build />
+
 
 <Callout title="What to notice">
 
@@ -155,3 +195,5 @@ Ready to defend: *"The detector was informative but sign-ambiguous. The bump's s
 <ProjectLink id="compliant-pendulum">
 The playground is the interactive version of this lesson: sweep the drive frequency, press "Change the body mid-run", and watch it happen.
 </ProjectLink>
+
+</Build>

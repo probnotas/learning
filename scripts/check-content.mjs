@@ -15,11 +15,14 @@ const ctx = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(root, "public", "harness-worker.js"), "utf8"), ctx);
 const runHarness = (code, tests) => ctx.runHarness(code, tests);
 
-const SECTIONS = ["## Why this matters", "## Watch / Read", "## Core ideas", "## Problem set", "## Build"];
 let failures = 0;
 const fail = (id, msg) => {
   failures++;
   console.log(`  ✖ ${id}: ${msg}`);
+};
+const num = (x) => {
+  const v = Number(x.trim().replace(/^(-?\d+)\/(\d+)$/, (_, a, b) => String(Number(a) / Number(b))));
+  return v;
 };
 
 const files = fs.readdirSync(lessonsDir).filter((f) => f.endsWith(".mdx")).sort();
@@ -29,18 +32,43 @@ for (const f of files) {
   if (!topicIds.has(String(data.topic))) fail(id, `topic "${data.topic}" not found in CURRICULUM.md`);
   if (!id.startsWith(`${String(data.topic)[0].toLowerCase()}-${String(data.topic).slice(1)}-`))
     fail(id, `filename should start with [trackId]-[topicId]- (e.g. a-1-...)`);
-  for (const s of SECTIONS) if (!content.includes(s)) fail(id, `missing section "${s}"`);
-  const watch = [...content.matchAll(/<(?:Watch|Read)\b[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
-  if (watch.length === 0) fail(id, "no <Watch>/<Read> items");
-  const problems = [...content.matchAll(/<Problem\b[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
-  const ids = [...watch, ...problems];
-  if (new Set(ids).size !== ids.length) fail(id, "duplicate sub-task ids");
+
+  // Nothing may sit outside an item: every top-level block must be one of the item tags.
+  const stripped = content
+    .replace(/<(Article|Watch|Read|Quiz|Build)\b[^>]*\/>/g, "")
+    .replace(/<(Article|Watch|Read|Quiz|Build)\b[^>]*>[\s\S]*?<\/\1>/g, "")
+    .trim();
+  if (stripped) fail(id, `content outside an item: "${stripped.slice(0, 60)}…"`);
+
+  const items = [...content.matchAll(/<(Article|Watch|Read|Quiz|Build)\b([^>]*?)\/?>/g)].map((m) => ({
+    tag: m[1],
+    id: m[2].match(/\bid="([^"]+)"/)?.[1],
+    draft: /\bdraft\b/.test(m[2]),
+  }));
+  const ids = items.map((i) => i.id);
+  if (ids.some((x) => !x)) fail(id, "an item is missing id=");
+  if (new Set(ids).size !== ids.length) fail(id, "duplicate item ids");
+  if (!items.some((i) => i.tag === "Watch" || i.tag === "Read")) fail(id, "no <Watch>/<Read> items");
+  for (const tag of ["Article", "Quiz", "Build"]) if (!items.some((i) => i.tag === tag)) fail(id, `no <${tag}> item`);
 
   if (data.status === "full") {
-    if (problems.length < 5 || problems.length > 10) fail(id, `expected 5-10 problems, found ${problems.length}`);
-    const solutions = (content.match(/<Solution>/g) ?? []).length;
-    if (solutions !== problems.length) fail(id, `${problems.length} problems but ${solutions} <Solution> blocks`);
-    if (!/<Build\b/.test(content)) fail(id, "full lesson without <Build />");
+    if (items.some((i) => i.draft)) fail(id, "full lesson with draft items");
+    const quiz = content.slice(content.indexOf("<Quiz"), content.indexOf("</Quiz>"));
+    const qs = [...quiz.matchAll(/<Q\b([^>]*)>([\s\S]*?)<\/Q>/g)];
+    if (qs.length < 5 || qs.length > 10) fail(id, `expected 5-10 questions, found ${qs.length}`);
+    for (const [, attrs, body] of qs) {
+      const qid = attrs.match(/\bid="([^"]+)"/)?.[1];
+      const answer = attrs.match(/\banswer="([^"]+)"/)?.[1];
+      const choice = attrs.match(/\bchoice="([^"]+)"/)?.[1];
+      if (!body.includes("<Solution>")) fail(id, `${qid}: no <Solution>`);
+      if (!answer && !choice) fail(id, `${qid}: needs answer="…" or choice="…"`);
+      if (answer && answer.split(";").some((a) => !isFinite(num(a)))) fail(id, `${qid}: unparseable answer "${answer}"`);
+      if (choice) {
+        const vs = [...body.matchAll(/<Choice v="([^"]+)"/g)].map((m) => m[1]);
+        if (vs.length < 2) fail(id, `${qid}: fewer than 2 choices`);
+        if (!vs.includes(choice)) fail(id, `${qid}: correct choice "${choice}" not among ${vs}`);
+      }
+    }
     const dir = path.join(buildsDir, id);
     const read = (n) => (fs.existsSync(path.join(dir, n)) ? fs.readFileSync(path.join(dir, n), "utf8") : null);
     const [starter, tests, solution] = ["starter.js", "tests.js", "solution.js"].map(read);
@@ -56,11 +84,10 @@ for (const f of files) {
       const st = runHarness(starter, tests);
       if (!st.error && st.results.every((r) => r.pass)) fail(id, "starter already passes every test");
       const passed = sol.results.filter((r) => r.pass).length;
-      console.log(`  ${passed === sol.results.length && !sol.error ? "✓" : "✖"} ${id}: ${problems.length} problems, ${passed}/${sol.results.length} tests pass (${ms} ms)`);
+      console.log(`  ${passed === sol.results.length && !sol.error ? "✓" : "✖"} ${id}: ${items.length} items, ${qs.length} questions, ${passed}/${sol.results.length} tests pass (${ms} ms)`);
     }
   } else {
-    if (!content.includes("<NotDrafted")) fail(id, "stub lesson should use <NotDrafted /> placeholders");
-    console.log(`  · ${id}: stub (${watch.length} watch/read items)`);
+    console.log(`  · ${id}: stub (${items.filter((i) => !i.draft).length} ready items, ${items.filter((i) => i.draft).length} drafts)`);
   }
 }
 console.log(failures ? `\n${failures} problem(s) found.` : `\nAll ${files.length} lessons OK.`);

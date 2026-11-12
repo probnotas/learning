@@ -33,31 +33,44 @@ export interface Curriculum {
   year2: string;
 }
 
-export interface WatchItem {
+export type ItemKind = "article" | "video" | "reading" | "quiz" | "build";
+
+/** One mini-lesson inside a lesson: a short article, a video, a reading, a practice quiz, or a build. */
+export interface ItemMeta {
   id: string;
+  kind: ItemKind;
   title: string;
-  kind: "watch" | "read";
+  draft: boolean; // not written yet (stub lessons)
+  questionIds: string[]; // quiz only
 }
 
 export interface LessonMeta {
   id: string;
   title: string;
-  topic: string; // "A1"
+  topic: string; // "A1": the unit this lesson belongs to
   track: string; // "A"
-  month: number | null; // MVP month, or null for Year 2
+  month: number | null; // 6-month-path month, or null for Year 2
   order: number;
   status: "full" | "stub";
   requires: string[]; // extra lesson-level prerequisites
   hours: number | null;
   summary: string;
-  watchItems: WatchItem[];
-  problemIds: string[];
-  hasBuild: boolean;
+  items: ItemMeta[];
+}
+
+/** A unit = one CURRICULUM.md topic (A1, B1, ...), shown in path order. */
+export interface Unit {
+  topic: string;
+  number: number;
+  title: string;
+  trackTitle: string;
+  lessonIds: string[];
 }
 
 export interface CurriculumIndex {
   curriculum: Curriculum;
   lessons: LessonMeta[];
+  units: Unit[];
 }
 
 export interface BuildFiles {
