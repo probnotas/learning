@@ -65,27 +65,39 @@ export function wordCount(s: string) {
 
 const VIDEO_URL = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube-nocookie\.com\/embed\/)([\w-]{11})/g;
 
-/** Split a pasted collection of transcripts (one section per video, each with its YouTube link)
- *  into { videoId: text }. A section counts only if it links exactly one video, so a table of
- *  contents listing every link is skipped. */
+const STAMP_LINE = /^\s*(?:\*\*)?\[\d{1,2}:\d{2}(?::\d{2})?\](?:\*\*)?/;
+const META_LINE = /^\s*(?:#{1,6}\s|-{3,}\s*$|\*{0,2}(?:Video title|Channel|Link|Duration|Published|Caption source|Words)\b)/i;
+
+/** Split a pasted collection of transcripts into { videoId: text }. Works on the raw Markdown
+ *  or on text copied from a rendered page (no #, no **): each transcript starts at a line with
+ *  its YouTube link and runs to the next link line. A link followed by little text (a table of
+ *  contents entry) is skipped. When the text has [mm:ss] paragraphs, the next video's title and
+ *  details that sit before its link are trimmed off the end. */
 export function parseCollection(raw: string): Record<string, string> {
+  const lines = raw.replace(/\r/g, "").split("\n");
+  const starts: { line: number; id: string }[] = [];
+  lines.forEach((l, i) => {
+    const ids = Array.from(new Set(Array.from(l.matchAll(VIDEO_URL), (m) => m[1])));
+    if (ids.length === 1) starts.push({ line: i, id: ids[0] });
+  });
   const out: Record<string, string> = {};
-  const sections = raw.replace(/\r/g, "").split(/\n(?=#{1,4} )/);
-  for (const sec of sections) {
-    const ids = Array.from(new Set(Array.from(sec.matchAll(VIDEO_URL), (m) => m[1])));
-    if (ids.length !== 1) continue;
-    const lines = sec.split("\n");
-    const at = lines.findIndex((l) => l.includes(ids[0]));
-    const body = lines
-      .slice(at + 1)
-      .filter((l) => !/^\s*(---+|\*\*(Video title|Channel|Link)[:*])/.test(l))
+  starts.forEach((st, k) => {
+    let body = lines.slice(st.line + 1, k + 1 < starts.length ? starts[k + 1].line : lines.length);
+    const lastStamp = body.map((l) => STAMP_LINE.test(l)).lastIndexOf(true);
+    if (lastStamp >= 0) {
+      body = body.slice(0, lastStamp + 1);
+    } else {
+      while (body.length && (META_LINE.test(body[body.length - 1]) || !body[body.length - 1].trim() || wordCount(body[body.length - 1]) < 12)) body.pop();
+    }
+    const text = body
+      .filter((l) => !META_LINE.test(l))
       .join("\n")
       .replace(/\*\*\[(\d{1,2}:\d{2}(?::\d{2})?)\]\*\*/g, "[$1]")
       .replace(/\b\d+ \d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}\s*/g, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
-    if (wordCount(body) >= 50) out[ids[0]] = (out[ids[0]] ? out[ids[0]] + "\n\n" : "") + body;
-  }
+    if (wordCount(text) >= 50 && wordCount(text) > wordCount(out[st.id] ?? "")) out[st.id] = text;
+  });
   return out;
 }
 
