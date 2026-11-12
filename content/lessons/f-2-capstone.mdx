@@ -1,0 +1,59 @@
+---
+title: "Capstone: A robot that learns its own body from babbling"
+topic: F2
+month: 6
+order: 16.5
+status: full
+capstone: true
+hours: 20
+summary: "Reproduce the core of self-modeling research in MuJoCo: learn a self-model from random motor babbling, damage the robot, and recover with few new samples."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** How much self-directed "babbling" data does a robot arm need to learn a useful self-model, and after damage, how few new samples does it need to repair that model? How does a learned self-model compare with explicit parameter identification?
+
+**Why a lab cares.** This is the heart of self-modeling research (Bongard, Zykov & Lipson 2006; Chen et al. 2022), and of what a humanoid needs when its body changes. A small, clean reproduction with a *sample-efficiency* angle, and an honest comparison with physics-based identification, shows you understand both camps.
+
+**What you'll build.**
+1. A 3-link planar arm in **MuJoCo** (MJCF) with joint-angle sensing and end-effector position.
+2. Babbling data: random joint targets, logging (joint angles, commands) → end-effector position and next state.
+3. A learned self-model (a **PyTorch** MLP: forward kinematics plus one-step dynamics), with accuracy vs. amount of babbling data.
+4. Damage: shorten a link, lock a joint, or weaken a motor. Detect it from self-model error, then repair with few new samples (fine-tuning vs. retraining) and plot samples-to-recover.
+5. A baseline: explicit kinematic/dynamic parameter identification (A1 style) on the same data budget.
+
+**Deliverables.** A repo plus a 5-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo, PyTorch, NumPy, Matplotlib.
+
+```bash
+pip install mujoco torch numpy matplotlib
+```
+
+**Starting point:** build the 3-link arm by nesting three bodies with hinge joints and `position` actuators, and add a `site` at the tip to read `d.site_xpos`. Apply damage by editing `m.geom_size` / `m.body_pos` (link length), `m.jnt_range` (locked joint) or `m.actuator_gainprm` (weak motor) between episodes.
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Arm and babbling">A 3-link MuJoCo arm, with a babbling script producing a dataset of at least 50k samples.</Milestone>
+<Milestone id="m2" title="Self-model learns">Forward-kinematics error vs. dataset size (log–log), with a held-out test set.</Milestone>
+<Milestone id="m3" title="Damage detected">Self-model error jumps after each of 3 damage types. Report detection delay.</Milestone>
+<Milestone id="m4" title="Repair efficiency">Samples-to-recover curves: fine-tune vs. retrain from scratch vs. explicit re-identification.</Milestone>
+<Milestone id="m5" title="Task check">Use the self-model for a reaching task before and after repair, and report the success rate.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Grounded in the literature:** clearly positioned relative to Bongard et al. 2006 and Chen et al. 2022.
+2. **Sample efficiency:** data-vs-error curves are the main result, with seeds.
+3. **Fair baseline:** explicit identification gets the same data budget.
+4. **Damage realism:** damage types are motivated and their effects explained.
+5. **Reproducibility:** one command per figure.
+
+</Paper>

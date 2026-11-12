@@ -15,7 +15,22 @@ export interface VideoTest {
   fromTranscript: boolean;
 }
 
+export interface PaperDraft {
+  sections: Record<string, string>;
+  repo: string;
+  submitted: boolean;
+}
+
+export const PAPER_MIN_WORDS = 40;
+
+export function paperReady(item: ItemMeta, paper: PaperDraft | undefined): boolean {
+  if (!paper) return false;
+  const words = (t: string | undefined) => (t ?? "").split(/\s+/).filter(Boolean).length;
+  return (item.sections ?? []).every((sec) => words(paper.sections[sec]) >= PAPER_MIN_WORDS) && /^https?:\/\/\S+\.\S+/.test(paper.repo.trim());
+}
+
 export interface LessonProgress {
+  paper?: PaperDraft; // capstone write-up
   videoTests?: Record<string, VideoTest>; // AI-generated test after each video, by item id
   items: Record<string, boolean>; // articles / videos / readings marked done
   answers: Record<string, Answer>; // quiz questions, by question id
@@ -65,6 +80,8 @@ export function itemDone(item: ItemMeta, p: LessonProgress): boolean {
   if (item.kind === "quiz") return item.questionIds.length > 0 && item.questionIds.every((q) => p.answers[q]?.correct);
   if (item.kind === "build") return p.buildPassed;
   if (item.kind === "video" && p.videoTests?.[item.id]?.passed) return true;
+  if (item.kind === "milestones") return item.questionIds.length > 0 && item.questionIds.every((m) => p.items[`${item.id}:${m}`]);
+  if (item.kind === "paper") return !!p.paper?.submitted && paperReady(item, p.paper);
   return !!p.items[item.id];
 }
 

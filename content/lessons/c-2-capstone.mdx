@@ -1,0 +1,65 @@
+---
+title: "Capstone: Model-based vs. model-free control under body change"
+topic: C2
+month: 5
+order: 14.5
+status: full
+capstone: true
+hours: 20
+summary: "LQR with a Kalman-filter self-model versus a PPO policy on a MuJoCo system, and who recovers faster when the body changes."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** When a robot's body changes mid-task, does a model-based controller with an explicit self-model (LQR + Kalman filter + re-identification) recover faster and more safely than a model-free RL policy, and what does each need to notice the change?
+
+**Why a lab cares.** Every humanoid team runs both kinds of controller and argues about the trade-offs. A small, fair, reproducible head-to-head that measures *recovery after a body change*, using the Kalman filter's innovation as a built-in change detector, speaks directly to how world-model and self-model teams think.
+
+**What you'll build.**
+1. A **MuJoCo** system worth controlling: a cart-pole or reaction-wheel pendulum, or the compliant arm holding a target angle.
+2. LQR from the linearized model, with a Kalman filter whose innovation is your change signal.
+3. A **PPO** policy trained with Stable-Baselines3 on a **Gymnasium** wrapper of the same model.
+4. Body change mid-episode (mass or link length): tracking error, recovery time, and failure rate for both.
+5. Adaptation: re-identify after detection (A1 least squares) and re-solve LQR, vs. a PPO policy trained with domain randomization.
+
+**Deliverables.** A repo plus a 5-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo, Gymnasium, Stable-Baselines3 (PPO), python-control (LQR, Kalman), NumPy, Matplotlib.
+
+```bash
+pip install mujoco gymnasium stable-baselines3 control numpy matplotlib
+```
+
+```python
+import control
+K, S, E = control.lqr(A, B, Q, R)          # from your linearized model
+L, P, E = control.lqe(A, G, C, QN, RN)     # Kalman gain; innovation = y - C x_hat
+from stable_baselines3 import PPO
+model = PPO("MlpPolicy", env, verbose=1).learn(total_timesteps=300_000)
+```
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="System and Gymnasium env">A MuJoCo model wrapped as a Gymnasium env, with a configurable body change (mass/length, time of change).</Milestone>
+<Milestone id="m2" title="LQR + Kalman filter">Stabilizes the nominal system. Innovation statistics are white under nominal conditions and drift after the change.</Milestone>
+<Milestone id="m3" title="PPO baseline">A PPO policy trained to comparable nominal performance, with the training curve and seeds reported.</Milestone>
+<Milestone id="m4" title="Body-change benchmark">Recovery time, peak error and failure rate for both controllers across ≥3 change magnitudes × 5 seeds.</Milestone>
+<Milestone id="m5" title="Adaptation">Detect → re-identify → re-solve LQR, vs. a domain-randomized PPO. A table with the cost of each (data, compute, time).</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Fair comparison:** matched nominal performance, compute reported, multiple seeds.
+2. **Change detection:** innovation-based detection evaluated (delay, false alarms).
+3. **Clear results:** recovery metrics with uncertainty across change magnitudes.
+4. **Insight:** when each approach wins and why, without overclaiming.
+5. **Reproducibility:** training configs, seeds, saved policies.
+
+</Paper>

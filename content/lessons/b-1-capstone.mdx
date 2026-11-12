@@ -1,0 +1,68 @@
+---
+title: "Capstone: Why amplitude-based body-change detectors fail"
+topic: B1
+month: 2
+order: 8.5
+status: full
+capstone: true
+hours: 15
+summary: "Turn the AUC = 0.11 result into a short paper: a frequency-resolved analysis of when amplitude scores flip sign, and a detector that doesn't."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** Why does an amplitude-based body-change detector on a compliant joint score far *below* chance, and which detector design avoids the frequency-dependent sign flip?
+
+**Why a lab cares.** "Something changed about my body" is one of the most common signals a deployed robot needs: payload pickup, wear, damage. Detectors that look at response amplitude are the obvious first try. Showing rigorously that their sign depends on drive frequency relative to $\sqrt{g/L}$ and the shifted resonance, with transients and window length as confounders, is a real negative result that saves teams from a subtle trap. It's also *your* result, which makes it the strongest portfolio item you can have.
+
+**What you'll build.**
+1. A sweep in **MuJoCo** (the A1 model): for each drive frequency, runs with and without a ×1.5 mass bump, several bump phases each, and sensor noise.
+2. The map of $\Delta$amplitude vs. frequency, with theory overlaid ($\omega^2 > g/L$ band, both resonances).
+3. ROC curves and AUC for three detectors: the naive amplitude score, $|\Delta|$, and a model-residual detector (the A1 self-model's prediction error, or its refitted $k/I$).
+4. AUC as a function of the *test-frequency distribution*, showing how the same detector can score 0.1 or 0.9.
+5. The effect of the scoring window: transient length, beats, and windows shorter than one period.
+
+**Deliverables.** A repo plus a 4-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo, NumPy, SciPy, scikit-learn (`roc_auc_score`, `roc_curve`), Matplotlib.
+
+```bash
+pip install mujoco numpy scipy scikit-learn matplotlib
+```
+
+```python
+from sklearn.metrics import roc_auc_score
+auc = roc_auc_score(labels, scores)            # labels: 1 = bump, 0 = no bump
+auc_abs = roc_auc_score(labels, np.abs(scores))
+```
+
+**Design tips:**
+- Randomize the bump *phase* (the time of the bump within the drive cycle). It's what makes transients matter.
+- Use several seeds per condition and report confidence intervals on AUC (bootstrap).
+- Overlay the linear-theory prediction $A\,|H(i\omega)|$ before and after the bump on every amplitude plot.
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Sweep harness">A function `run(omega, bump, phase, seed)` returns the logged trajectory; the full sweep runs in under 10 minutes.</Milestone>
+<Milestone id="m2" title="The sign-flip map">A figure of steady-state $\Delta$amplitude vs. $\omega$ from simulation, with theory overlaid and the increase band marked.</Milestone>
+<Milestone id="m3" title="Three detectors, ROC curves">ROC and AUC with bootstrap CIs for naive, $|\Delta|$ and model-residual detectors.</Milestone>
+<Milestone id="m4" title="Distribution dependence">AUC vs. the test-frequency distribution, reproducing an AUC near 0.11 under a plausible distribution and near 0.9 under another.</Milestone>
+<Milestone id="m5" title="Window and transient analysis">Detection performance vs. window start delay and window length, including windows shorter than one drive period.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Clear claim:** the negative result is stated precisely, with the condition under which it holds.
+2. **Theory meets simulation:** analytic predictions are overlaid on every key empirical figure.
+3. **Statistical care:** seeds, confidence intervals, and no cherry-picked frequencies.
+4. **Constructive fix:** the model-residual detector is evaluated fairly, including where it fails.
+5. **Reproducibility:** the sweep config and seeds regenerate every number.
+
+</Paper>

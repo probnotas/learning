@@ -35,10 +35,3 @@ export function difficulty(month: number | null): { label: string; bars: number 
   return { label: "Advanced", bars: 3 };
 }
 
-/** Each lesson in a unit gets its own spot around the unit's building, so the camera
- *  moves when you switch lesson cards. Spots spread across the building's footprint. */
-export function lessonSpot(site: Site, i: number, n: number): { x: number; y: number } {
-  if (n <= 1) return { x: site.x, y: site.y };
-  const spread = Math.min(0.03, 0.09 / n);
-  return { x: site.x + (i - (n - 1) / 2) * spread, y: site.y + (i % 2 ? 0.016 : -0.012) };
-}

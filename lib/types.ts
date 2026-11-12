@@ -33,7 +33,7 @@ export interface Curriculum {
   year2: string;
 }
 
-export type ItemKind = "article" | "video" | "reading" | "quiz" | "build";
+export type ItemKind = "article" | "video" | "reading" | "quiz" | "build" | "milestones" | "paper";
 
 /** One mini-lesson inside a lesson: a short article, a video, a reading, a practice quiz, or a build. */
 export interface ItemMeta {
@@ -42,7 +42,8 @@ export interface ItemMeta {
   title: string;
   draft: boolean; // not written yet (stub lessons)
   youtube?: string; // video items: YouTube id
-  questionIds: string[]; // quiz only
+  questionIds: string[]; // quiz: question ids; milestones: milestone ids
+  sections?: string[]; // paper: section names
 }
 
 export interface LessonMeta {
@@ -53,6 +54,7 @@ export interface LessonMeta {
   month: number | null; // 6-month-path month, or null for Year 2
   order: number;
   status: "full" | "stub";
+  capstone: boolean; // the end-of-unit portfolio project
   requires: string[]; // extra lesson-level prerequisites
   hours: number | null;
   summary: string;

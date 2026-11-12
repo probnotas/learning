@@ -1,0 +1,100 @@
+---
+title: "Capstone: Identifying a compliant joint in MuJoCo"
+topic: A1
+month: 1
+order: 4.5
+status: full
+capstone: true
+hours: 15
+summary: "Build a series-elastic pendulum in MuJoCo, identify its physics from data with least squares, and show exactly when a body change is (and isn't) identifiable."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** From joint-encoder data alone, which physical parameters of a series-elastic joint can a robot identify about itself, and how does the answer depend on the motion you command?
+
+**Why a lab cares.** Humanoids like 1X's NEO are built around compliant, series-elastic actuation. Every self-model, world model or controller for them assumes something about effective stiffness, inertia and damping, and those drift when the robot picks something up, wears in, or gets damaged. A clean, reproducible identification study that also says *when identification fails* is exactly the kind of small, careful result that tells a team you can be trusted with their data.
+
+**What you'll build.**
+1. A compliant pendulum in **MuJoCo**: a position-controlled motor, a torsional spring, an arm and a bob.
+2. A data pipeline: excite it, log encoder angles, difference to get $\dot\theta$ and $\ddot\theta$ (as you did in the lessons).
+3. A least-squares self-model that recovers $[k/I,\ g/L,\ c/I]$, compared against MuJoCo's ground truth.
+4. An **identifiability study**: excitation (none, single sine, multi-sine) × amplitude, measured by the condition number of $A^\top A$ and the parameter error.
+5. A **body-change** experiment: mass ×1.5 mid-run, tracked with a sliding window.
+
+**Deliverables.** A public GitHub repo (code, notebook, figures, README with one-command reproduction) and a 4-page paper written in the Paper item at the end of this project.
+
+**Scope.** About 15 hours. Keep it small and rigorous rather than big and vague.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo (the physics engine used across robot-learning labs), NumPy, Matplotlib, Jupyter.
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install mujoco numpy scipy matplotlib jupyter
+```
+
+**Starter model** (`pendulum.xml`). The arm is a child body of the rotor, so the arm joint's `stiffness` acts on the *relative* angle $\theta_a - \theta_m$, which is exactly series elasticity.
+
+```xml
+<mujoco model="compliant_pendulum">
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <worldbody>
+    <body name="rotor" pos="0 0 1.5">
+      <joint name="motor" type="hinge" axis="0 1 0"/>
+      <geom type="cylinder" size="0.04 0.02" euler="90 0 0" mass="0.2"/>
+      <body name="arm">
+        <joint name="spring" type="hinge" axis="0 1 0" stiffness="10" springref="0" damping="0.1"/>
+        <geom type="capsule" fromto="0 0 0 0 0 -1" size="0.01" mass="0.001"/>
+        <geom name="bob" type="sphere" pos="0 0 -1" size="0.04" mass="1"/>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="theta_m" joint="motor" kp="400" kv="20"/>
+  </actuator>
+</mujoco>
+```
+
+**Minimal loop.** Joint angles are relative, so the arm's absolute angle is the sum.
+
+```python
+import mujoco, numpy as np
+m = mujoco.MjModel.from_xml_path("pendulum.xml"); d = mujoco.MjData(m)
+log = []
+while d.time < 20:
+    d.ctrl[0] = 0.3*np.sin(3*d.time) + 0.2*np.sin(7.3*d.time)   # multi-sine
+    mujoco.mj_step(m, d)
+    log.append((d.time, d.qpos[0], d.qpos[0] + d.qpos[1]))     # t, theta_m, theta_a
+```
+
+**Watch out for:**
+- The bob's inertia isn't exactly $mL^2$: the sphere adds $\tfrac25 mr^2$ and the rod adds a little. Report the true $I$ from `m.body_inertia` and the composite inertia, not the textbook value.
+- The motor only *tracks* $\theta_m$ through a PD loop. Log the actual `qpos[0]`, not the command.
+- To bump the mass mid-run, scale `m.body_mass` **and** `m.body_inertia` of the arm body.
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Model runs and matches theory">The MuJoCo pendulum swings. Small free oscillations have a measured period within 2% of $2\pi/\omega_n$, computed from MuJoCo's actual inertia. Plot both.</Milestone>
+<Milestone id="m2" title="Identification works on clean data">Least squares recovers $[k/I, g/L, c/I]$ from a 10 s multi-sine run to within 1% of ground truth. Table of true vs. estimated values.</Milestone>
+<Milestone id="m3" title="Identifiability study">For at least 3 excitations × 3 amplitudes, report the condition number of $A^\top A$ and the parameter error. One heat-map figure showing where $k/I$ and $g/L$ become inseparable.</Milestone>
+<Milestone id="m4" title="Noise makes it honest">Add encoder quantization (4096 counts/rev) and Gaussian noise. Compare raw double-differencing with a filtered pipeline and report how the error grows.</Milestone>
+<Milestone id="m5" title="Body change tracked">Mass ×1.5 at $t = 10$ s; sliding-window estimates of $k/I$ and $c/I$ step by $1/1.5$ while $g/L$ stays flat. Report detection delay vs. window length.</Milestone>
+<Milestone id="m6" title="Reproducible repo">`README.md` with one command that regenerates every figure, pinned requirements, and the figures committed.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric** (what the reviewer scores, 1–5 each):
+
+1. **Clear question:** one precise, answerable research question stated up front.
+2. **Correct method:** the model, regression and inertia accounting are right and explained.
+3. **Evidence:** every claim is backed by a figure or table with ground truth, and noise is included.
+4. **Identifiability insight:** you show *when* parameters can't be separated, and why.
+5. **Reproducibility:** one command regenerates the results, and the repo is clean.
+
+</Paper>

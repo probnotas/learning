@@ -1,0 +1,74 @@
+---
+title: "Capstone: Differentiable self-identification with JAX"
+topic: A2
+month: 3
+order: 11.5
+status: full
+capstone: true
+hours: 18
+summary: "Differentiate through a pendulum simulator, fit body parameters by gradient descent, and map where gradient-based self-identification breaks."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** When a robot fits its own body parameters by differentiating through a simulator, how do rollout length, noise and initial guess decide whether it converges, and how does that compare with the closed-form least squares from A1?
+
+**Why a lab cares.** Differentiable simulation (MuJoCo **MJX**, Brax, JAX-based world models) is how many teams calibrate sim-to-real and train models end to end. Its failure modes are well known to practitioners and badly documented: exploding gradients over long rollouts, local minima from oscillation, noise sensitivity. A crisp empirical map of those failure modes on a system you fully understand is genuinely useful.
+
+**What you'll build.**
+1. The compliant pendulum's semi-implicit Euler step in **JAX**, checked against MuJoCo for the same parameters.
+2. Gradients of a trajectory loss with respect to $(m, k, c)$ three ways: finite differences, `jax.grad` and your own dual-number code from A2. Show that they agree.
+3. Gradient-based fitting with Optax (Adam) and Gauss–Newton, from many initial guesses.
+4. A map of the loss landscape vs. rollout horizon: when do gradients explode, and when does the fit lock onto the wrong oscillation?
+5. Comparison with the A1 least-squares estimator: accuracy, data needed, and robustness to noise.
+
+**Deliverables.** A repo plus a 4-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** JAX, Optax, MuJoCo (with MJX as a stretch goal), NumPy, Matplotlib.
+
+```bash
+pip install "jax[cpu]" optax mujoco mujoco-mjx numpy matplotlib
+```
+
+```python
+import jax, jax.numpy as jnp
+def step(state, u, p, dt=0.002):
+    th, w = state
+    I = p["m"] * p["L"]**2
+    acc = (p["k"]*(u - th) - p["m"]*9.81*p["L"]*jnp.sin(th) - p["c"]*w) / I
+    w = w + dt*acc
+    return (th + dt*w, w)
+def rollout(p, us):
+    def f(s, u): s = step(s, u, p); return s, s[0]
+    return jax.lax.scan(f, (0.0, 0.0), us)[1]
+loss = lambda p, us, y: jnp.mean((rollout(p, us) - y)**2)
+grads = jax.grad(loss)(params, us, measured)
+```
+
+**Stretch goal:** run the same fit through `mujoco.mjx` on the A1 MJCF model, to show it works on a real simulator, not just your hand-written step.
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="JAX simulator validated">Your JAX rollout matches MuJoCo's within $10^{-3}$ rad over 5 s for the same parameters (use MuJoCo's actual inertia).</Milestone>
+<Milestone id="m2" title="Three gradients agree">Finite differences, `jax.grad` and dual numbers agree to 4+ significant figures. Show a plot of relative error vs. finite-difference step size.</Milestone>
+<Milestone id="m3" title="Fits converge">Adam and Gauss–Newton both recover $(m, k, c)$ from noisy data. Compare the iterations needed and the final error.</Milestone>
+<Milestone id="m4" title="Failure map">A figure of convergence rate vs. rollout horizon × initial-guess error, with at least one diagnosed failure mode (gradient blow-up or a local minimum from phase wrapping).</Milestone>
+<Milestone id="m5" title="Head-to-head with least squares">The same data through the A1 estimator: a table of error, data needed and runtime.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Clear question:** a precise question about when gradient-based identification works.
+2. **Verified gradients:** independent cross-checks before any optimization result is trusted.
+3. **Failure analysis:** at least one failure mode explained mechanistically, not just observed.
+4. **Fair baseline:** an honest comparison with least squares on identical data.
+5. **Reproducibility:** seeds, configs and one-command figures.
+
+</Paper>

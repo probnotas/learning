@@ -35,12 +35,12 @@ for (const f of files) {
 
   // Nothing may sit outside an item: every top-level block must be one of the item tags.
   const stripped = content
-    .replace(/<(Article|Watch|Read|Quiz|Build)\b[^>]*\/>/g, "")
-    .replace(/<(Article|Watch|Read|Quiz|Build)\b[^>]*>[\s\S]*?<\/\1>/g, "")
+    .replace(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b[^>]*\/>/g, "")
+    .replace(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b[^>]*>[\s\S]*?<\/\1>/g, "")
     .trim();
   if (stripped) fail(id, `content outside an item: "${stripped.slice(0, 60)}…"`);
 
-  const items = [...content.matchAll(/<(Article|Watch|Read|Quiz|Build)\b([^>]*?)\/?>/g)].map((m) => ({
+  const items = [...content.matchAll(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b([^>]*?)\/?>/g)].map((m) => ({
     tag: m[1],
     id: m[2].match(/\bid="([^"]+)"/)?.[1],
     draft: /\bdraft\b/.test(m[2]),
@@ -48,6 +48,17 @@ for (const f of files) {
   const ids = items.map((i) => i.id);
   if (ids.some((x) => !x)) fail(id, "an item is missing id=");
   if (new Set(ids).size !== ids.length) fail(id, "duplicate item ids");
+  if (data.capstone === true) {
+    for (const tag of ["Article", "Milestones", "Paper"]) if (!items.some((i) => i.tag === tag)) fail(id, `capstone without <${tag}>`);
+    const ms = [...content.matchAll(/<Milestone\b[^>]*\bid="([^"]+)"[^>]*\btitle="[^"]+"/g)].map((m) => m[1]);
+    if (ms.length < 3) fail(id, `capstone needs 3+ milestones (with id and title), found ${ms.length}`);
+    if (new Set(ms).size !== ms.length) fail(id, "duplicate milestone ids");
+    const secs = content.match(/<Paper\b[^>]*\bsections="([^"]+)"/)?.[1]?.split(";").filter(Boolean) ?? [];
+    if (secs.length < 3) fail(id, "capstone <Paper> needs sections=\"A;B;C…\"");
+    if (!/Rubric/i.test(content.slice(content.indexOf("<Paper")))) fail(id, "capstone <Paper> should include a rubric");
+    console.log(`  🏆 ${id}: capstone, ${ms.length} milestones, ${secs.length} paper sections`);
+    continue;
+  }
   if (!items.some((i) => i.tag === "Watch" || i.tag === "Read")) fail(id, "no <Watch>/<Read> items");
   for (const tag of ["Article", "Quiz", "Build"]) if (!items.some((i) => i.tag === tag)) fail(id, `no <${tag}> item`);
 

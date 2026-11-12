@@ -6,6 +6,7 @@ import remarkMath from "remark-math";
 import { BuildPanel } from "@/components/BuildPanel";
 import { LessonStage } from "@/components/LessonStage";
 import { Callout, ProjectLink } from "@/components/mdx/Callout";
+import { Milestone, Milestones, Paper } from "@/components/mdx/Capstone";
 import { Article, BuildItem, Choice, Q, Quiz, Read, Solution, Watch } from "@/components/mdx/Items";
 import { lessonPlainText, loadIndex, readBuildFiles, readLessonSource } from "@/lib/lessons";
 
@@ -47,6 +48,9 @@ export default async function ItemPage({ params }: { params: { lessonId: string;
       Solution,
       Callout,
       ProjectLink,
+      Milestones,
+      Milestone,
+      Paper,
       Build: (props: { id: string; title: string; draft?: boolean; children?: React.ReactNode }) => (
         <BuildItem {...props} panel={<BuildPanel lessonId={meta.id} files={files} />} />
       ),

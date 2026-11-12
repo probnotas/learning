@@ -3,11 +3,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { itemDone, lessonPassed, lessonStarted, lockInfo, lp, nextLesson, unitLessons, unitMastery } from "@/lib/progress";
 import { updateLesson, useAppState } from "@/lib/store";
-import type { LessonMeta, Unit } from "@/lib/types";
-import { difficulty, lessonSpot, siteFor, WORLD_IMAGE, YEAR2_SITE, type Site } from "@/lib/world";
+import type { Unit } from "@/lib/types";
+import { difficulty, siteFor, WORLD_IMAGE, YEAR2_SITE, type Site } from "@/lib/world";
 import { earnedXP, lessonXP } from "@/lib/xp";
-import { useIndex } from "../IndexProvider";
 import { LevelPill, ThemeToggle } from "../Chrome";
+import { useIndex } from "../IndexProvider";
 
 const AR = WORLD_IMAGE.width / WORLD_IMAGE.height;
 
@@ -17,66 +17,47 @@ interface Cam {
   s: number;
 }
 
-/** The campus map: units are buildings; pick one and the camera flies in. */
+/** The campus map. Every unit is a building; the card shows one unit at a time and the camera follows it. */
 export function World({ initialUnit }: { initialUnit?: string }) {
   const index = useIndex();
   const [state, hydrated] = useAppState();
   const pathUnits = useMemo(() => index.units.filter((u) => unitLessons(index, u).some((l) => l.month !== null)), [index]);
   const year2 = useMemo(() => index.units.filter((u) => !pathUnits.includes(u)), [index, pathUnits]);
-  const sites = useMemo(() => {
-    const m: Record<string, Site> = {};
-    index.units.forEach((u) => (m[u.topic] = siteFor(u.topic)));
-    return m;
-  }, [index]);
+  const allUnits = useMemo(() => [...pathUnits, ...year2], [pathUnits, year2]);
+  const sites = useMemo(() => Object.fromEntries(index.units.map((u) => [u.topic, siteFor(u.topic)])) as Record<string, Site>, [index]);
 
-  const [selected, setSelected] = useState<string | null>(initialUnit ?? null);
+  const startIdx = Math.max(0, allUnits.findIndex((u) => u.topic === initialUnit));
+  const [cardIdx, setCardIdx] = useState(startIdx);
   const [zoomed, setZoomed] = useState(!!initialUnit);
-  const [lessonIdx, setLessonIdx] = useState(0);
   const [manual, setManual] = useState<Cam | null>(null); // set while you drag / scroll the map
 
-  // Default selection: the unit (and lesson) you should do next.
+  // Default card: the unit you should work on next. Then fly in to its building.
   useEffect(() => {
     if (!hydrated) return;
-    const next = nextLesson(index, state);
-    const topic = initialUnit ?? next?.topic ?? index.units[0]?.topic;
-    if (!topic) return;
-    setSelected(topic);
-    const unit = index.units.find((u) => u.topic === topic)!;
-    const lessons = unitLessons(index, unit);
-    const i = lessons.findIndex((l) => !lessonPassed(l, lp(state, l.id)));
-    setLessonIdx(i < 0 ? 0 : i);
-    // The camera follows the card: fly in to the lesson it shows.
+    if (!initialUnit) {
+      const next = nextLesson(index, state);
+      const i = allUnits.findIndex((u) => u.topic === next?.topic);
+      if (i >= 0) setCardIdx(i);
+    }
     const t = setTimeout(() => setZoomed(true), 350);
     return () => clearTimeout(t);
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectUnit = useCallback(
-    (topic: string, zoom = true) => {
-      setSelected(topic);
-      setZoomed(zoom);
-      setManual(null);
-      const unit = index.units.find((u) => u.topic === topic)!;
-      const lessons = unitLessons(index, unit);
-      const i = lessons.findIndex((l) => !lessonPassed(l, lp(state, l.id)));
-      setLessonIdx(i < 0 ? 0 : i);
-      window.history.replaceState(null, "", zoom ? `/unit/${topic.toLowerCase()}` : "/");
-    },
-    [index, state],
-  );
-
-  const unit = index.units.find((u) => u.topic === selected) ?? null;
+  const unit = allUnits[Math.min(cardIdx, allUnits.length - 1)];
   const lessons = unit ? unitLessons(index, unit) : [];
-  const lesson = lessons[Math.min(lessonIdx, Math.max(0, lessons.length - 1))];
-  /** Show lesson i on the card and fly the camera to its spot. */
-  const focusLesson = useCallback(
+
+  /** Show unit i on the card and fly the camera to its building. */
+  const showUnit = useCallback(
     (i: number) => {
-      setLessonIdx(Math.max(0, Math.min(i, lessons.length - 1)));
+      const j = Math.max(0, Math.min(i, allUnits.length - 1));
+      setCardIdx(j);
       setZoomed(true);
       setManual(null);
-      if (unit) window.history.replaceState(null, "", `/unit/${unit.topic.toLowerCase()}`);
+      window.history.replaceState(null, "", `/unit/${allUnits[j].topic.toLowerCase()}`);
     },
-    [lessons.length, unit],
+    [allUnits],
   );
+  const pickTopic = (topic: string) => showUnit(allUnits.findIndex((u) => u.topic === topic));
   const zoomOut = () => {
     setZoomed(false);
     setManual(null);
@@ -86,12 +67,14 @@ export function World({ initialUnit }: { initialUnit?: string }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") zoomOut();
-      if (e.key === "ArrowRight") focusLesson(lessonIdx + 1);
-      if (e.key === "ArrowLeft") focusLesson(lessonIdx - 1);
+      if (e.key === "ArrowRight") showUnit(cardIdx + 1);
+      if (e.key === "ArrowLeft") showUnit(cardIdx - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  if (!unit) return null;
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#0d2a3a] font-sans text-white">
@@ -99,12 +82,9 @@ export function World({ initialUnit }: { initialUnit?: string }) {
         sites={sites}
         units={pathUnits}
         year2={year2}
-        selected={selected}
+        selected={unit.topic}
         zoomed={zoomed}
-        onPick={(t) => selectUnit(t)}
-        lessons={lessons}
-        lessonIdx={lessonIdx}
-        onPickLesson={focusLesson}
+        onPick={pickTopic}
         manual={manual}
         setManual={setManual}
         hydrated={hydrated}
@@ -113,7 +93,6 @@ export function World({ initialUnit }: { initialUnit?: string }) {
       {/* soft vignette so the panels read well over the photo */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,0.45))]" />
 
-      {/* top bar */}
       <Link href="/" onClick={zoomOut} className="absolute left-8 top-6 text-3xl font-bold tracking-tight drop-shadow-lg">
         learn<span className="text-lime-300">lab</span>
       </Link>
@@ -121,52 +100,46 @@ export function World({ initialUnit }: { initialUnit?: string }) {
         <LevelPill />
       </div>
 
-      {/* left rail: lessons in the selected unit, then tools */}
+      {/* left rail: the card's unit, lesson by lesson, then its project */}
       <nav className="glass absolute left-6 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-[22px] p-2">
         {lessons.map((l, i) => {
           const p = lp(state, l.id);
           const lock = hydrated ? lockInfo(index, state, l) : null;
           const passed = hydrated && lessonPassed(l, p);
-          const active = i === lessonIdx;
           return (
-            <button
+            <Link
               key={l.id}
-              title={l.title}
-              onClick={() => focusLesson(i)}
+              href={`/lesson/${l.id}`}
+              title={`${l.capstone ? "Unit project: " : ""}${l.title}${lock?.locked ? " (locked)" : ""}`}
               className={`relative flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
-                active ? "bg-white text-neutral-900" : passed ? "bg-green-500/90 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"
+                passed ? "bg-green-500/90 text-white" : l.capstone ? "bg-amber-300/20 text-amber-200 hover:bg-amber-300/30" : "bg-white/10 text-white/85 hover:bg-white/20"
               }`}
             >
-              {passed ? "✓" : String(i + 1).padStart(2, "0")}
+              {passed ? "✓" : l.capstone ? "🏆" : String(i + 1).padStart(2, "0")}
               {lock?.locked && <span className="absolute -right-1 -top-1 rounded-full bg-neutral-900 px-1 text-[9px]">🔒</span>}
-            </button>
+            </Link>
           );
         })}
         <span className="my-1 h-px w-7 bg-white/20" />
         <Link href="/notes" title="Notebook" className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15">
           ✎
         </Link>
-        <Link href="/projects" title="Projects" className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15">
+        <Link href="/projects" title="Portfolio & projects" className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15">
           ⚒
         </Link>
         <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15" />
       </nav>
 
-      {/* right card: the selected lesson */}
-      {unit && lesson && (
-        <LessonCard
-          unit={unit}
-          lesson={lesson}
-          index={lessonIdx}
-          count={lessons.length}
-          onPrev={() => focusLesson(lessonIdx - 1)}
-          onNext={() => focusLesson(lessonIdx + 1)}
-          site={sites[unit.topic]}
-          hydrated={hydrated}
-        />
-      )}
+      <UnitCard
+        unit={unit}
+        index={cardIdx}
+        count={allUnits.length}
+        onPrev={() => showUnit(cardIdx - 1)}
+        onNext={() => showUnit(cardIdx + 1)}
+        site={sites[unit.topic]}
+        hydrated={hydrated}
+      />
 
-      {/* recenter */}
       {(zoomed || manual) && (
         <button
           onClick={zoomOut}
@@ -178,7 +151,7 @@ export function World({ initialUnit }: { initialUnit?: string }) {
       )}
 
       <p className="pointer-events-none absolute bottom-[5.6rem] left-6 hidden text-[11px] text-white/60 drop-shadow lg:block">
-        Drag to explore · scroll to zoom · Esc for the whole campus
+        Drag to explore · scroll to zoom · ← → to change unit · Esc for the whole campus
       </p>
 
       {/* bottom bar: units */}
@@ -186,13 +159,13 @@ export function World({ initialUnit }: { initialUnit?: string }) {
         {pathUnits.map((u, i) => (
           <span key={u.topic} className="flex items-center">
             {i > 0 && <span className="mx-1 h-0.5 w-4 rounded bg-white/25" />}
-            <UnitChip unit={u} selected={u.topic === selected} onClick={() => selectUnit(u.topic)} color={sites[u.topic].color} hydrated={hydrated} />
+            <UnitChip unit={u} selected={u.topic === unit.topic} onClick={() => pickTopic(u.topic)} color={sites[u.topic].color} hydrated={hydrated} />
           </span>
         ))}
         <span className="mx-2 h-7 w-px bg-white/25" />
         <span className="mr-1 whitespace-nowrap text-[10px] font-semibold uppercase tracking-widest text-white/50">Year 2</span>
         {year2.map((u) => (
-          <UnitChip key={u.topic} unit={u} small selected={u.topic === selected} onClick={() => selectUnit(u.topic)} color={sites[u.topic].color} hydrated={hydrated} />
+          <UnitChip key={u.topic} unit={u} small selected={u.topic === unit.topic} onClick={() => pickTopic(u.topic)} color={sites[u.topic].color} hydrated={hydrated} />
         ))}
       </div>
     </div>
@@ -206,9 +179,6 @@ function MapLayer({
   selected,
   zoomed,
   onPick,
-  lessons,
-  lessonIdx,
-  onPickLesson,
   manual,
   setManual,
   hydrated,
@@ -216,19 +186,16 @@ function MapLayer({
   sites: Record<string, Site>;
   units: Unit[];
   year2: Unit[];
-  selected: string | null;
+  selected: string;
   zoomed: boolean;
   onPick: (topic: string) => void;
-  lessons: LessonMeta[];
-  lessonIdx: number;
-  onPickLesson: (i: number) => void;
   manual: Cam | null;
   setManual: (c: Cam | null) => void;
   hydrated: boolean;
 }) {
   const index = useIndex();
-  const selectedYear2 = year2.find((u) => u.topic === selected);
   const [state] = useAppState();
+  const selectedYear2 = year2.find((u) => u.topic === selected);
   const [vp, setVp] = useState({ w: 1440, h: 900 });
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ x: number; y: number; cam: Cam; moved: boolean; id: number } | null>(null);
@@ -249,18 +216,16 @@ function MapLayer({
     Y: Math.min(0, Math.max(vp.h - c.s * H, c.Y)),
   });
 
-  const site = selected ? sites[selected] : null;
-  const spot = site && lessons.length ? lessonSpot(site, lessonIdx, lessons.length) : site;
-
-  // Where the camera wants to be: the whole campus, or the selected lesson's spot.
+  const site = sites[selected];
   let auto: Cam = { s: 1, X: (vp.w - W) / 2, Y: (vp.h - H) / 2 };
-  if (zoomed && site && spot) {
+  if (zoomed && site) {
     const s = site.zoom;
-    const cardSpace = vp.w > 1024 ? 210 : 0; // keep the building left of the lesson card
-    auto = clamp({ s, X: vp.w / 2 - cardSpace - s * spot.x * W, Y: vp.h * 0.5 - s * spot.y * H });
+    const cardSpace = vp.w > 1024 ? 210 : 0; // keep the building left of the card
+    auto = clamp({ s, X: vp.w / 2 - cardSpace - s * site.x * W, Y: vp.h * 0.5 - s * site.y * H });
   }
   const cam = manual ?? auto;
   const { s } = cam;
+  const ease = dragging ? "none" : manual ? "transform 0.18s ease-out" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)";
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -289,8 +254,12 @@ function MapLayer({
     const k = ns / s;
     setManual(clamp({ s: ns, X: e.clientX - (e.clientX - cam.X) * k, Y: e.clientY - (e.clientY - cam.Y) * k }));
   };
-
-  const ease = dragging ? "none" : manual ? "transform 0.18s ease-out" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)";
+  const pinStyle = (x: number, y: number) => ({
+    left: `${x * 100}%`,
+    top: `${y * 100}%`,
+    transform: `translate(-50%, -50%) scale(${1 / s})`,
+    transition: ease === "none" ? "none" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)",
+  });
 
   return (
     <div
@@ -308,47 +277,37 @@ function MapLayer({
         }
       }}
     >
-      <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{ width: W, height: H, transform: `translate(${cam.X}px, ${cam.Y}px) scale(${s})`, transition: ease }}
-      >
+      <div className="absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `translate(${cam.X}px, ${cam.Y}px) scale(${s})`, transition: ease }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={WORLD_IMAGE.src} alt="Campus map" className="pointer-events-none h-full w-full select-none" draggable={false} />
 
-        {/* light beam on the card's lesson */}
-        {spot && (
+        {/* light beam on the card's building */}
+        {site && (
           <div
             className="pointer-events-none absolute"
             style={{
-              left: `${spot.x * 100}%`,
+              left: `${site.x * 100}%`,
               top: 0,
-              height: `${spot.y * 100}%`,
+              height: `${site.y * 100}%`,
               width: 80 / s,
               transform: "translateX(-50%)",
               background: "linear-gradient(to bottom, rgba(190,242,100,0) 0%, rgba(190,242,100,0.35) 55%, rgba(220,255,200,0.85) 100%)",
               filter: "blur(6px)",
               mixBlendMode: "screen",
               animation: "beam 3s ease-in-out infinite",
-              transition: "left 0.9s ease, height 0.9s ease",
             }}
           />
         )}
 
-        {/* unit pins (hidden for the selected unit once you're zoomed in: its lessons show instead) */}
+        {/* one pin per building */}
         {units.map((u) => {
           const st = sites[u.topic];
           const isSel = u.topic === selected;
-          if (isSel && zoomed && lessons.length > 1) return null;
           const first = unitLessons(index, u)[0];
           const locked = hydrated && first ? lockInfo(index, state, first).locked : false;
           const pct = hydrated ? Math.round(unitMastery(index, state, u) * 100) : 0;
           return (
-            <button
-              key={u.topic}
-              onClick={() => onPick(u.topic)}
-              className="group absolute"
-              style={{ left: `${st.x * 100}%`, top: `${st.y * 100}%`, transform: `translate(-50%, -50%) scale(${1 / s})`, transition: ease === "none" ? "none" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)" }}
-            >
+            <button key={u.topic} onClick={() => onPick(u.topic)} className="group absolute" style={pinStyle(st.x, st.y)}>
               {isSel && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
               <span
                 className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg ${
@@ -369,50 +328,9 @@ function MapLayer({
           );
         })}
 
-        {/* lesson pins around the selected building */}
-        {site && zoomed && lessons.length > 1 &&
-          lessons.map((l, i) => {
-            const sp = lessonSpot(site, i, lessons.length);
-            const active = i === lessonIdx;
-            const passed = hydrated && lessonPassed(l, lp(state, l.id));
-            const locked = hydrated && lockInfo(index, state, l).locked;
-            return (
-              <button
-                key={l.id}
-                onClick={() => onPickLesson(i)}
-                title={l.title}
-                className="group absolute"
-                style={{ left: `${sp.x * 100}%`, top: `${sp.y * 100}%`, transform: `translate(-50%, -50%) scale(${1 / s})` }}
-              >
-                {active && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
-                <span
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg ${
-                    active ? "border-white bg-white text-neutral-900" : passed ? "border-white/80 bg-green-500 text-white" : "border-white/80 bg-black/55 text-white"
-                  } ${locked && !active ? "opacity-60" : ""}`}
-                >
-                  {passed ? "✓" : String(i + 1).padStart(2, "0")}
-                </span>
-                {active && (
-                  <span className="absolute left-1/2 top-11 max-w-[220px] -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
-                    {locked ? "🔒 " : ""}
-                    {l.title}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
         {/* one pin for the whole Year 2 district */}
         {year2.length > 0 && (
-          <button
-            onClick={() => onPick(selectedYear2?.topic ?? year2[0].topic)}
-            className="group absolute"
-            style={{
-              left: `${YEAR2_SITE.x * 100}%`,
-              top: `${YEAR2_SITE.y * 100}%`,
-              transform: `translate(-50%, -50%) scale(${1 / s})`,
-            }}
-          >
+          <button onClick={() => onPick(selectedYear2?.topic ?? year2[0].topic)} className="group absolute" style={pinStyle(YEAR2_SITE.x, YEAR2_SITE.y)}>
             {selectedYear2 && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
             <span
               className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed text-xs font-bold shadow-lg ${
@@ -473,9 +391,9 @@ function UnitChip({
   );
 }
 
-function LessonCard({
+/** The card: one unit. Before you start it shows what's ahead; after, how you're doing. */
+function UnitCard({
   unit,
-  lesson,
   index: i,
   count,
   onPrev,
@@ -484,7 +402,6 @@ function LessonCard({
   hydrated,
 }: {
   unit: Unit;
-  lesson: LessonMeta;
   index: number;
   count: number;
   onPrev: () => void;
@@ -494,12 +411,30 @@ function LessonCard({
 }) {
   const index = useIndex();
   const [state] = useAppState();
-  const p = lp(state, lesson.id);
-  const lock = hydrated ? lockInfo(index, state, lesson) : { locked: false, reasons: [], overridden: false };
-  const passed = hydrated && lessonPassed(lesson, p);
-  const started = hydrated && lessonStarted(lesson, p);
-  const diff = difficulty(lesson.month);
-  const done = lesson.items.filter((it) => itemDone(it, p)).length;
+  const lessons = unitLessons(index, unit);
+  const regular = lessons.filter((l) => !l.capstone);
+  const capstone = lessons.find((l) => l.capstone);
+  const first = lessons[0];
+  const lock = hydrated && first ? lockInfo(index, state, first) : { locked: false, reasons: [] as string[], overridden: false };
+  const passedCount = hydrated ? regular.filter((l) => lessonPassed(l, lp(state, l.id))).length : 0;
+  const started = hydrated && lessons.some((l) => lessonStarted(l, lp(state, l.id)));
+  const next = hydrated ? lessons.find((l) => !lessonPassed(l, lp(state, l.id))) : first;
+  const mastered = hydrated && lessons.length > 0 && !next;
+  const mastery = hydrated ? Math.round(unitMastery(index, state, unit) * 100) : 0;
+  const xpTotal = lessons.reduce((s, l) => s + lessonXP(l), 0);
+  const xpEarned = hydrated ? lessons.reduce((s, l) => s + earnedXP(l, lp(state, l.id)), 0) : 0;
+  const hours = lessons.reduce((s, l) => s + (l.hours ?? 0), 0);
+  const diff = difficulty(first?.month ?? null);
+  const capP = capstone ? lp(state, capstone.id) : null;
+  const capStatus = !capstone
+    ? "—"
+    : hydrated && capP && lessonPassed(capstone, capP)
+      ? "✓ In portfolio"
+      : hydrated && capP && capstone.items.some((it) => itemDone(it, capP))
+        ? "In progress"
+        : hydrated && lockInfo(index, state, capstone).locked
+          ? "After the lessons"
+          : "Ready";
   const fmt = (n: number) => String(n).padStart(2, "0");
 
   return (
@@ -516,7 +451,6 @@ function LessonCard({
         </button>
       </div>
 
-      {/* unit badge */}
       <div className="mt-5 flex flex-col items-center">
         <div
           className="relative flex h-28 w-56 rotate-[-3deg] flex-col items-center justify-center rounded-2xl border-4 border-white/90 px-3 shadow-xl"
@@ -525,37 +459,36 @@ function LessonCard({
           <span className="absolute -top-3 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-900 shadow">
             Unit {unit.number}
           </span>
-          <span
-            className="text-5xl font-black tracking-tight text-white"
-            style={{ WebkitTextStroke: "2px rgba(0,0,0,0.55)", textShadow: "0 4px 0 rgba(0,0,0,0.35)" }}
-          >
+          <span className="text-5xl font-black tracking-tight text-white" style={{ WebkitTextStroke: "2px rgba(0,0,0,0.55)", textShadow: "0 4px 0 rgba(0,0,0,0.35)" }}>
             {unit.topic}
-          </span>
-          <span className="mt-0.5 line-clamp-1 text-center text-[11px] font-bold uppercase tracking-wide text-white/90">
-            {unit.title.split(" — ")[0]}
           </span>
         </div>
         <p className="mt-3 text-xs text-white/55">{site.building}</p>
-        <h2 className="mt-2 text-center text-xl font-semibold leading-snug">{lesson.title}</h2>
+        <h2 className="mt-1 text-center text-2xl font-semibold leading-snug">{unit.title}</h2>
+        <p className="mt-1 text-center text-sm text-white/60">
+          {regular.length} lesson{regular.length === 1 ? "" : "s"}
+          {capstone ? " + 🏆 portfolio project" : ""}
+        </p>
       </div>
 
       <dl className="mt-5 space-y-3 border-t border-white/10 pt-4 text-sm">
-        {started || passed ? (
+        {started || mastered ? (
           <>
-            <Row label="Performance">{passed ? <span className="text-green-300">Passed ✓</span> : "In progress"}</Row>
-            <Row label="Items done">
-              {done} / {lesson.items.length}
+            <Row label="Mastery">{mastered ? <span className="text-green-300">{mastery}% ✓</span> : `${mastery}%`}</Row>
+            <Row label="Lessons passed">
+              {passedCount} / {regular.length}
             </Row>
+            {capstone && <Row label="Project">{capStatus}</Row>}
             <Row label="XP earned">
-              <XpTag n={earnedXP(lesson, p)} />
+              <XpTag n={xpEarned} />
             </Row>
           </>
         ) : (
           <>
             <Row label="Earn XP up to">
-              <XpTag n={lessonXP(lesson)} />
+              <XpTag n={xpTotal} />
             </Row>
-            <Row label="Time">{lesson.hours ? `~${lesson.hours} hr` : "—"}</Row>
+            <Row label="Time">{hours ? `~${hours} hr` : "—"}</Row>
             <Row label="Difficulty">
               <span className="flex items-center gap-3">
                 <span className="flex gap-1">
@@ -580,8 +513,8 @@ function LessonCard({
           </ul>
           <button
             onClick={() => {
-              if (confirm("Skip the prerequisites? The point of this curriculum is to not skip.")) {
-                updateLesson(lesson.id, (x) => ({ ...x, override: true }), { activity: false });
+              if (first && confirm("Skip the prerequisites? The point of this curriculum is to not skip.")) {
+                updateLesson(first.id, (x) => ({ ...x, override: true }), { activity: false });
               }
             }}
             className="mt-2 text-xs text-white/45 underline hover:text-white/80"
@@ -591,11 +524,11 @@ function LessonCard({
         </div>
       ) : (
         <Link
-          href={`/lesson/${lesson.id}`}
+          href={`/lesson/${(next ?? first)?.id ?? ""}`}
           className="mt-5 block w-full rounded-full bg-white py-3.5 text-center text-base font-semibold text-neutral-900 shadow-lg hover:brightness-95"
         >
-          {passed ? "Review" : started ? "Continue" : "Start"}
-          {lesson.status === "stub" && <span className="ml-2 text-xs font-normal text-neutral-500">(draft)</span>}
+          {mastered ? "Review" : started ? "Continue" : "Start"}
+          {!mastered && next && <span className="mt-0.5 block truncate px-6 text-xs font-normal text-neutral-500">{next.capstone ? "🏆 " : ""}{next.title}</span>}
         </Link>
       )}
     </aside>

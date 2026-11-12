@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { lp } from "@/lib/progress";
+import { itemDone, lessonPassed, lockInfo, lp } from "@/lib/progress";
 import { PROJECTS } from "@/lib/projects";
 import { update, useAppState } from "@/lib/store";
 import { useIndex } from "./IndexProvider";
@@ -31,8 +31,63 @@ export function ProjectsView() {
 
   const builds = index.lessons.filter((l) => l.items.some((i) => i.kind === "build" && !i.draft));
 
+  const capstones = index.lessons.filter((l) => l.capstone);
+  const downloadPaper = (id: string) => {
+    const l = index.lessons.find((x) => x.id === id)!;
+    const paper = lp(state, id).paper;
+    const secs = l.items.find((i) => i.kind === "paper")?.sections ?? [];
+    const md = [`# ${l.title.replace(/^Capstone:\s*/, "")}`, "", `Code: ${paper?.repo ?? ""}`, "", ...secs.flatMap((s) => [`## ${s}`, "", paper?.sections[s] ?? "", ""])].join("\n");
+    const url = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${id.replace(/-capstone$/, "")}-paper.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-12">
+      <section>
+        <h2 className="font-sans text-lg font-semibold text-ink-100">Portfolio</h2>
+        <p className="mt-1 font-serif text-sm text-ink-400">
+          One research-style project per unit, built with the tools robotics labs use. Each finished project is a public repo plus a short paper.
+        </p>
+        <ul className="mt-4 grid gap-3 md:grid-cols-2">
+          {capstones.map((l) => {
+            const p = lp(state, l.id);
+            const done = lessonPassed(l, p);
+            const started = l.items.some((it) => itemDone(it, p)) || !!p.paper;
+            const locked = lockInfo(index, state, l).locked;
+            return (
+              <li key={l.id} className={`rounded-xl border p-4 ${done ? "border-good/60 bg-good/5" : "border-ink-800 bg-ink-900"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <Link href={`/lesson/${l.id}`} className="font-sans font-semibold text-ink-100 hover:underline">
+                    🏆 {l.title.replace(/^Capstone:\s*/, "")}
+                  </Link>
+                  <span className="shrink-0 font-mono text-xs text-ink-400">{l.topic}</span>
+                </div>
+                <p className="mt-1 font-serif text-sm text-ink-400">{l.summary}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3 font-sans text-xs">
+                  <span className={done ? "font-semibold text-good" : started ? "text-warn" : "text-ink-400"}>
+                    {done ? "✓ Complete" : started ? "In progress" : locked ? "🔒 After the unit's lessons" : "Not started"}
+                  </span>
+                  {p.paper?.repo && (
+                    <a href={p.paper.repo} target="_blank" rel="noopener noreferrer" className="text-accent underline">
+                      repo ↗
+                    </a>
+                  )}
+                  {p.paper && (
+                    <button onClick={() => downloadPaper(l.id)} className="text-accent underline">
+                      paper .md
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
       <section>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {PROJECTS.map((p) => (

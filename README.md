@@ -26,17 +26,17 @@ Other scripts:
 
 ## What's in it
 
-- **The campus (`/`, `/unit/<topic>`)**: the whole course is a world map (`public/world/campus.webp`). Every unit on the 6-month path is a building: A1 Robotics Lab, A2 The Ring, B1 Resonance Dome, A4 Oscillator Hall, C2 Control Center, F1 World Model Observatory, F2 Self-Model Institute, F3 Lagoon Monitoring Station. Year 2 is a planned district on the hillside.
-  - **Bottom bar:** every unit, in path order. Year 2 units are smaller, after the divider. A ring shows each unit's progress; ✓ means mastered.
-  - **Drag** anywhere to explore the campus; **scroll** to zoom.
-  - **The camera follows the card.** Every lesson has its own spot at its unit's building (numbered pins 01, 02, …). Switching lessons with the card's ‹ ›, the left rail, the pins or the ← → keys flies the camera there, and a light beam marks it. The ⌖ button or Esc shows the whole campus.
-  - **Left rail:** the lessons in that unit (✓ passed, 🔒 locked), plus Notebook, Projects and the theme toggle.
-  - **Right card:** the selected lesson (‹ 02 / 04 ›). Before you start it shows XP available, time and difficulty; once started it shows performance, items done and XP earned. Its button reads Start, Continue, Review, or Locked (with the reason and "Unlock anyway…").
-  - **Level pill (✦ L0):** total XP. XP is derived from your progress, 1000 XP per level.
+- **The campus (`/`, `/unit/<topic>`)**: the whole course is a world map (`public/world/campus.webp`). Every unit on the 6-month path is one building, with one pin each: A1 Robotics Lab, A2 The Ring, B1 Resonance Dome, A4 Oscillator Hall, C2 Control Center, F1 World Model Observatory, F2 Self-Model Institute, F3 Lagoon Monitoring Station. Year 2 is a planned district on the hillside.
+  - **The card is a unit.** ‹ 01 / 18 › steps through the units, and the camera flies to each unit's building with a light beam on it. Before you start, the card shows XP available, time and difficulty; after, mastery, lessons passed, project status and XP earned. Its button opens the next thing to do (Start, Continue, Review), or shows Locked with the reason and "Unlock anyway…".
+  - **Bottom bar:** every unit, in path order (Year 2 smaller, after the divider), with a progress ring.
+  - **Left rail:** the card's unit: its lessons (01, 02, …), then 🏆 its portfolio project, then Notebook, Portfolio and the theme toggle.
+  - **Drag** to explore and **scroll** to zoom. ← → change unit, and ⌖ or Esc shows the whole campus.
+  - **Level pill (✦ L0):** total XP, derived from your progress, 1000 XP per level.
 - **Lessons (`/lesson/<id>/<item>`)**: one big card plays the lesson's items in order (video, article, reading, practice, build), with story-style progress segments along the bottom (click to jump; ← → keys work too). The **Notes** panel sits beside it and saves as you type. `/lesson/<id>` jumps to your first unfinished item.
 - **Practice**: numeric answer boxes (fractions like `7/6`, `pi`, `sqrt()` and scientific notation are accepted; tolerances are set per question) and multiple choice. Wrong answers turn red and can be retried as many times as you need. After one wrong try you can open the worked solution. The practice set passes when every question is green.
 - **Build**: Monaco editor + Run. It passes when every test passes.
-- **Notebook (`/notes`)** and **Projects (`/projects`)**: all your notes with Markdown export; the pendulum project and a build log.
+- **Unit projects (🏆, one per unit)**: after a unit's lessons comes a capstone, a small research project built with the tools robotics labs use (MuJoCo, JAX/MJX, PyTorch, Gymnasium, Stable-Baselines3, SciPy, python-control, scikit-learn). Each has a brief (research question, why a lab like 1X cares, what to build), tools and setup (install commands, starter MuJoCo model), milestones you tick off as your repo progresses, and a **paper** you write in the app (Abstract, Introduction, Setup, Method, Results, Discussion) next to a rubric. "✦ Review against the rubric" gets reviewer-style feedback; "Submit to portfolio" needs every section filled in (40+ words) and a public repo link. The projects build on each other: the MuJoCo compliant pendulum from A1 is the testbed for B1, A4, C2 and F3.
+- **Notebook (`/notes`)** and **Portfolio & projects (`/projects`)**: all your notes with Markdown export; every unit project's status, repo link and paper download; the pendulum playground and a build log.
 - **Theme**: dark by default, with a ☀/☾ toggle (remembered). The lesson card is always deep green.
 
 To move a unit to a different building, edit the coordinates in `lib/world.ts` (fractions of the image width and height).
@@ -141,6 +141,18 @@ Inside a locked lesson there's an "Unlock anyway…" link behind a confirm dialo
    - Add `draft` to any item that isn't written yet: `<Quiz id="practice" title="Practice" draft />`.
    - Use `$…$` / `$$…$$` for KaTeX. Write `\lt` / `\gt` inside math, and avoid bare `{` `}` in prose.
 
+   **Unit projects** are lessons with `capstone: true` in the frontmatter, ordered after the unit's last lesson (e.g. `order: 4.5`). Their body is `<Article>` items (brief, setup), then:
+
+   ```mdx
+   <Milestones id="milestones" title="Milestones">
+   <Milestone id="m1" title="Short goal">What "done" means, checkable in the repo.</Milestone>
+   </Milestones>
+
+   <Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+   **Rubric:** 1. … 2. …
+   </Paper>
+   ```
+
 4. Build files in `content/builds/<lessonId>/`:
    - `solution.js`: the reference implementation plus any demo code. Put `// @todo hint text` directly above each top-level function the learner should write. Use ` | ` to split the hint over several lines.
    - `tests.js`: `test(name, fn)` cases using `assert`, `assertClose(a, b, tol)` and `assertArrayClose(a, b, tol)`.
@@ -180,9 +192,10 @@ Things to know:
 
 ## AI features (video tests, notes check, Ask AI)
 
-Three features use **Groq** (model `openai/gpt-oss-120b` by default, change it with `GROQ_MODEL`; via the official `groq-sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
+Four features use **Groq** (model `openai/gpt-oss-120b` by default, change it with `GROQ_MODEL`; via the official `groq-sdk`, from server routes under `app/api/ai/`, so your key never reaches the browser):
 
 - **Video test.** After every video there's a 5-question test written from that video's transcript. A video is complete only when you get every question right; wrong answers can be retried, and "New questions" writes a fresh set. Tests are saved, so they don't change when you come back.
+- **Review against the rubric** (unit projects). Reviewer-style scores per rubric item, the top 3 fixes, and questions a lab engineer would ask.
 - **Check my notes** (Notes tab). Compares your notes with the transcript and lesson. You get what's right, errors with fixes, missing key ideas, and one question to test yourself.
 - **Ask AI** (tab next to Notes). Ask questions while you watch. Answers stream in and are grounded in the current video's transcript (or all of the lesson's transcripts on non-video pages) plus the lesson text.
 

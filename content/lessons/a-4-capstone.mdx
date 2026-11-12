@@ -1,0 +1,66 @@
+---
+title: "Capstone: Online resonance tracking as a self-model"
+topic: A4
+month: 4
+order: 13.5
+status: full
+capstone: true
+hours: 16
+summary: "Identify the joint's transfer function from chirp data, then track its natural frequency online and show it follows a body change."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** Can a robot keep an up-to-date frequency-domain self-model (natural frequency, damping ratio, gain) of a compliant joint while it operates, and how fast and how accurately does that model follow a body change?
+
+**Why a lab cares.** Frequency-response models are how hardware teams characterize actuators and tune controllers. A lightweight online estimator of $\omega_n$ and $\zeta$ is directly useful for health monitoring and adaptive control on series-elastic joints. It's also a physics-grounded counterpart to the learned detectors in world-model work.
+
+**What you'll build.**
+1. Chirp and multi-sine excitation of the **MuJoCo** pendulum; a Bode plot estimated with `scipy.signal` (Welch / cross-spectral density).
+2. A fitted second-order transfer function; $\omega_n$, $\zeta$ and DC gain compared with theory and with A1's time-domain estimates.
+3. An online tracker: either a phase-locked loop that holds the −90° point, or recursive least squares on a discrete ARX model.
+4. Mass bump mid-run: tracking delay and error vs. tracker bandwidth.
+5. A comparison of the frequency-domain and time-domain self-models.
+
+**Deliverables.** A repo plus a 4-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo, SciPy (`scipy.signal`), python-control, NumPy, Matplotlib.
+
+```bash
+pip install mujoco scipy control numpy matplotlib
+```
+
+```python
+from scipy import signal
+f, Pxy = signal.csd(u, y, fs=500, nperseg=4096)
+f, Pxx = signal.welch(u, fs=500, nperseg=4096)
+H = Pxy / Pxx                     # empirical frequency response
+import control
+sys = control.tf([k/I], [1, c/I, (k + m*g*L)/I])   # theory, to overlay
+```
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Empirical Bode plot">Magnitude and phase from chirp data, with the theoretical $H(i\omega)$ overlaid.</Milestone>
+<Milestone id="m2" title="Fitted transfer function">$\omega_n$, $\zeta$ and gain estimated with uncertainty, then compared with the A1 least-squares estimates.</Milestone>
+<Milestone id="m3" title="Online tracker">A PLL or RLS tracker running on streaming data, with $\hat\omega_n(t)$ plotted against the true value.</Milestone>
+<Milestone id="m4" title="Tracks a body change">Mass ×1.5 mid-run: tracking delay vs. tracker bandwidth, with the trade-off curve.</Milestone>
+<Milestone id="m5" title="Nonlinearity check">Repeat at large amplitude and show how the effective $\omega_n$ shifts (amplitude-dependent resonance).</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Clear question:** about online, frequency-domain self-modeling.
+2. **Correct signal processing:** windowing, resolution and coherence are explained, and estimates carry uncertainty.
+3. **Tracking evaluation:** the delay-vs-noise trade-off is quantified.
+4. **Honest limits:** nonlinearity and its effect on the linear model are shown.
+5. **Reproducibility:** one command regenerates every figure.
+
+</Paper>

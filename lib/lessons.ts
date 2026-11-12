@@ -19,7 +19,15 @@ function buildDir(id: string) {
   return path.join(BUILDS_DIR, id);
 }
 
-const ITEM_KIND: Record<string, ItemKind> = { Article: "article", Watch: "video", Read: "reading", Quiz: "quiz", Build: "build" };
+const ITEM_KIND: Record<string, ItemKind> = {
+  Article: "article",
+  Watch: "video",
+  Read: "reading",
+  Quiz: "quiz",
+  Build: "build",
+  Milestones: "milestones",
+  Paper: "paper",
+};
 
 function parseLesson(id: string): LessonMeta {
   const raw = fs.readFileSync(path.join(LESSONS_DIR, `${id}.mdx`), "utf8");
@@ -27,7 +35,7 @@ function parseLesson(id: string): LessonMeta {
   const topic = String(data.topic ?? "").toUpperCase();
 
   const items: ItemMeta[] = [];
-  for (const m of content.matchAll(/<(Article|Watch|Read|Quiz|Build)\b([^>]*?)\/?>/g)) {
+  for (const m of content.matchAll(/<(Article|Watch|Read|Quiz|Build|Milestones|Paper)\b([^>]*?)\/?>/g)) {
     const a = attrs(m[2]);
     const kind = ITEM_KIND[m[1]];
     if (!a.id) continue;
@@ -37,8 +45,21 @@ function parseLesson(id: string): LessonMeta {
       const block = content.slice(m.index, end < 0 ? undefined : end);
       questionIds = [...block.matchAll(/<Q\b[^>]*?\bid="([^"]+)"/g)].map((q) => q[1]);
     }
+    if (kind === "milestones") {
+      const end = content.indexOf("</Milestones>", m.index);
+      const block = content.slice(m.index, end < 0 ? undefined : end);
+      questionIds = [...block.matchAll(/<Milestone\b[^>]*?\bid="([^"]+)"/g)].map((q) => q[1]);
+    }
     const draft = /\bdraft\b/.test(m[2]) || (kind === "build" && !fs.existsSync(path.join(buildDir(id), "tests.js")));
-    items.push({ id: a.id, kind, title: a.title ?? a.id, draft, questionIds, ...(a.youtube ? { youtube: a.youtube } : {}) });
+    items.push({
+      id: a.id,
+      kind,
+      title: a.title ?? a.id,
+      draft,
+      questionIds,
+      ...(a.youtube ? { youtube: a.youtube } : {}),
+      ...(kind === "paper" ? { sections: (a.sections ?? "").split(";").map((x) => x.trim()).filter(Boolean) } : {}),
+    });
   }
 
   return {
@@ -49,6 +70,7 @@ function parseLesson(id: string): LessonMeta {
     month: typeof data.month === "number" ? data.month : null,
     order: Number(data.order ?? 999),
     status: data.status === "full" ? "full" : "stub",
+    capstone: data.capstone === true,
     requires: Array.isArray(data.requires) ? data.requires.map(String) : [],
     hours: typeof data.hours === "number" ? data.hours : null,
     summary: String(data.summary ?? ""),
@@ -119,6 +141,7 @@ export function lessonPlainText(id: string): string {
     .replace(/<Quiz\b[^>]*\/>/g, "")
     .replace(/<Build\b[\s\S]*?<\/Build>/g, "")
     .replace(/<Build\b[^>]*\/>/g, "")
+    .replace(/<Paper\b[\s\S]*?<\/Paper>/g, "")
     .replace(/<(Article|Watch|Read)\b[^>]*title="([^"]*)"[^>]*>/g, (_m, tag: string, title: string) => `\n[${tag === "Watch" ? "Video" : tag === "Read" ? "Reading" : "Article"}: ${title}]\n`)
     .replace(/<\/?[A-Z][A-Za-z]*\b[^>]*>/g, "")
     .replace(/\n{3,}/g, "\n\n")

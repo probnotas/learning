@@ -2,7 +2,7 @@ import type { ItemKind } from "@/lib/types";
 
 /** Khan-style square item icon. Filled when done. */
 export function ItemIcon({ kind, done, draft }: { kind: ItemKind; done?: boolean; draft?: boolean }) {
-  const glyph = { video: "▶", article: "≡", reading: "↗", quiz: "✎", build: "</>" }[kind];
+  const glyph = { video: "▶", article: "≡", reading: "↗", quiz: "✎", build: "</>", milestones: "☑", paper: "¶" }[kind];
   return (
     <span
       aria-hidden
@@ -25,4 +25,6 @@ export const KIND_LABEL: Record<ItemKind, string> = {
   reading: "Reading",
   quiz: "Practice",
   build: "Build",
+  milestones: "Milestones",
+  paper: "Paper",
 };

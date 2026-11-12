@@ -1,0 +1,65 @@
+---
+title: "Capstone: An open benchmark for robot body-change detection"
+topic: F3
+month: 6
+order: 17.5
+status: full
+capstone: true
+hours: 20
+summary: "Release a small, reproducible benchmark of injected body faults in MuJoCo, with CUSUM, GLR and learned detectors scored on delay vs. false alarms."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** Under realistic excitation and noise, how do classical change detectors (CUSUM, GLR on model residuals) compare with learned detectors at finding body changes, measured as detection delay vs. false-alarm rate?
+
+**Why a lab cares.** Fault and change detection is a safety requirement for robots working around people, and there's no small, standard benchmark for it on articulated robots. A clean, open benchmark with proper metrics (average run length to false alarm, detection delay) is something a lab can actually reuse. That's the most valuable kind of portfolio artifact.
+
+**What you'll build.**
+1. A benchmark generator in **MuJoCo**: the compliant pendulum plus one multi-joint system, with injected faults (mass change, friction increase, motor gain loss, stiffness drop), random fault times, and several excitation regimes.
+2. Residual generators: the A1 least-squares self-model, the A4 frequency model, and optionally the F1 world model.
+3. **CUSUM** and **GLR** on residuals, tuned for a target false-alarm rate.
+4. A learned detector (e.g. a small 1-D CNN on residual windows) as a baseline.
+5. Metrics: detection delay vs. average run length to false alarm, plus per-fault-type breakdowns.
+
+**Deliverables.** A repo with a `pip install`-able benchmark package, a leaderboard table, and a 5-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** MuJoCo, NumPy, SciPy, PyTorch (learned baseline), Matplotlib. Reading: Basseville & Nikiforov, ch. 2 (from the F3 lesson).
+
+```bash
+pip install mujoco numpy scipy torch matplotlib
+```
+
+```python
+# One-sided CUSUM for an upward mean shift in a residual r_t
+g = 0.0; alarms = []
+for t, r in enumerate(residuals):
+    g = max(0.0, g + r - nu)      # nu: drift (half the shift you care about)
+    if g > h: alarms.append(t); g = 0.0   # h: threshold, set for the target false-alarm rate
+```
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Fault generator">≥4 fault types × ≥3 excitation regimes × random fault times, with seeds and fault times as ground truth.</Milestone>
+<Milestone id="m2" title="Residuals">At least two residual generators, with nominal residual statistics characterized (mean, variance, whiteness).</Milestone>
+<Milestone id="m3" title="CUSUM and GLR">Both implemented, thresholds calibrated to a target average run length, and detection delay reported.</Milestone>
+<Milestone id="m4" title="Learned baseline">A learned detector trained on a separate split; same metrics.</Milestone>
+<Milestone id="m5" title="Benchmark release">A package with a README, an evaluation script and a results table someone else could reproduce in one command.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Benchmark design:** fault types, excitation and metrics are well motivated and documented.
+2. **Correct statistics:** CUSUM/GLR calibrated properly, with run-length metrics used correctly.
+3. **Fair comparison:** learned and classical detectors evaluated on identical splits.
+4. **Usefulness:** someone else could plug in a new detector in under an hour.
+5. **Reproducibility:** pinned environment and one-command evaluation.
+
+</Paper>

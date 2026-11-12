@@ -1,0 +1,69 @@
+---
+title: "Capstone: A small world model and its blind spots"
+topic: F1
+month: 6
+order: 15.5
+status: full
+capstone: true
+hours: 20
+summary: "Train a latent world model on a MuJoCo robot, measure how far it can imagine, and test whether its prediction error notices a body change."
+---
+
+<Article id="brief" title="The brief">
+
+**Research question.** How well does a small learned latent world model predict a MuJoCo robot's future, how quickly do its open-loop rollouts degrade, and is its prediction error a reliable body-change detector compared with a physics self-model?
+
+**Why a lab cares.** World-model teams (1X's world model work, Dreamer-style agents) live and die by **evaluation**: rollout fidelity over horizon, failure under distribution shift, and whether model error signals anything useful. A careful evaluation study on a small, fully controlled system is the kind of work a world-model lab can read in ten minutes and immediately judge.
+
+**What you'll build.**
+1. A dataset from a **Gymnasium MuJoCo** environment (e.g. `Reacher-v5` or `HalfCheetah-v5`) with random and scripted actions: proprioception, plus optional rendered frames.
+2. A world model in **PyTorch**: an encoder, a latent dynamics model (GRU / RSSM-lite) and a decoder, trained on next-state prediction.
+3. Open-loop rollout error vs. horizon, compared with a linear model and a physics baseline.
+4. Distribution shift: change body mass and link lengths in the MJCF and measure the jump in prediction error, plus ROC/AUC as a change detector.
+5. A comparison with the A1-style physics self-model on the same detection task.
+
+**Deliverables.** A repo plus a 5-page paper.
+
+</Article>
+
+<Article id="setup" title="Tools and setup">
+
+**Tools:** PyTorch, Gymnasium (MuJoCo envs), MuJoCo, NumPy, Matplotlib. Optional: LeRobot's dataset format for logging.
+
+```bash
+pip install torch gymnasium[mujoco] mujoco numpy matplotlib
+```
+
+```python
+import gymnasium as gym
+env = gym.make("Reacher-v5")
+obs, _ = env.reset(seed=0)
+for t in range(1000):
+    a = env.action_space.sample()
+    obs2, r, term, trunc, _ = env.step(a)
+    buffer.append((obs, a, obs2)); obs = obs2
+    if term or trunc: obs, _ = env.reset()
+# Body change: edit the env's model, e.g. env.unwrapped.model.body_mass[i] *= 1.5
+```
+
+</Article>
+
+<Milestones id="milestones" title="Milestones">
+<Milestone id="m1" title="Dataset">At least 200k transitions with a documented action distribution; train/val/test split by episode.</Milestone>
+<Milestone id="m2" title="World model trained">Next-step validation error beats a linear baseline. Learning curves included.</Milestone>
+<Milestone id="m3" title="Horizon analysis">Open-loop rollout error vs. horizon (1–100 steps) for the world model, the linear model and the physics baseline.</Milestone>
+<Milestone id="m4" title="Shift and detection">Prediction error under 3+ body changes; ROC/AUC for error-based change detection, compared with the physics self-model.</Milestone>
+<Milestone id="m5" title="Failure gallery">3 concrete failure cases visualized (plots or rendered frames), each with a diagnosis.</Milestone>
+</Milestones>
+
+<Paper id="paper" title="Paper" sections="Abstract;Introduction;Setup;Method;Results;Discussion and limitations">
+
+**Rubric:**
+
+1. **Evaluation-first:** horizon and shift metrics are defined before results are shown.
+2. **Baselines:** linear and physics baselines run on identical data.
+3. **Detection study:** ROC/AUC with seeds and confidence intervals.
+4. **Failure analysis:** concrete, diagnosed failure cases.
+5. **Reproducibility:** data generation, training and evaluation scripts, with seeds.
+
+</Paper>

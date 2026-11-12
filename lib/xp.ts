@@ -12,6 +12,8 @@ function itemXP(it: ItemMeta): number {
     case "reading": return 30;
     case "quiz": return 25 * it.questionIds.length;
     case "build": return 150;
+    case "milestones": return 60 * it.questionIds.length;
+    case "paper": return 500;
   }
 }
 
@@ -23,6 +25,7 @@ export function earnedXP(meta: LessonMeta, p: LessonProgress): number {
   return meta.items.reduce((s, it) => {
     if (it.draft) return s;
     if (it.kind === "quiz") return s + 25 * it.questionIds.filter((q) => p.answers[q]?.correct).length;
+    if (it.kind === "milestones") return s + 60 * it.questionIds.filter((m) => p.items[`${it.id}:${m}`]).length;
     return s + (itemDone(it, p) ? itemXP(it) : 0);
   }, 0);
 }
