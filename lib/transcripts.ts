@@ -62,3 +62,56 @@ export function useTranscript(videoId: string | undefined): string {
 export function wordCount(s: string) {
   return s ? s.split(/\s+/).filter(Boolean).length : 0;
 }
+
+const VIDEO_URL = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube-nocookie\.com\/embed\/)([\w-]{11})/g;
+
+/** Split a pasted collection of transcripts (one section per video, each with its YouTube link)
+ *  into { videoId: text }. A section counts only if it links exactly one video, so a table of
+ *  contents listing every link is skipped. */
+export function parseCollection(raw: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const sections = raw.replace(/\r/g, "").split(/\n(?=#{1,4} )/);
+  for (const sec of sections) {
+    const ids = Array.from(new Set(Array.from(sec.matchAll(VIDEO_URL), (m) => m[1])));
+    if (ids.length !== 1) continue;
+    const lines = sec.split("\n");
+    const at = lines.findIndex((l) => l.includes(ids[0]));
+    const body = lines
+      .slice(at + 1)
+      .filter((l) => !/^\s*(---+|\*\*(Video title|Channel|Link)[:*])/.test(l))
+      .join("\n")
+      .replace(/\*\*\[(\d{1,2}:\d{2}(?::\d{2})?)\]\*\*/g, "[$1]")
+      .replace(/\b\d+ \d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}\s*/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    if (wordCount(body) >= 50) out[ids[0]] = (out[ids[0]] ? out[ids[0]] + "\n\n" : "") + body;
+  }
+  return out;
+}
+
+/** Save every transcript found in a pasted collection. Returns the ids saved. */
+export function importCollection(raw: string): string[] {
+  const found = parseCollection(raw);
+  const next = { ...load(), ...found };
+  cache = next;
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+  } catch (err) {
+    console.error("[learnlab] could not save transcripts", err);
+    throw err;
+  }
+  listeners.forEach((l) => l());
+  return Object.keys(found);
+}
+
+export function useAllTranscripts(): Record<string, string> {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => load(),
+    () => EMPTY,
+  );
+}
+const EMPTY: Record<string, string> = {};

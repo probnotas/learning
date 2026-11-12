@@ -127,6 +127,9 @@ export function World({ initialUnit }: { initialUnit?: string }) {
         <Link href="/projects" title="Portfolio & projects" className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15">
           ⚒
         </Link>
+        <Link href="/transcripts" title="Video transcripts" className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15">
+          ¶
+        </Link>
         <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg text-white/75 hover:bg-white/15" />
       </nav>
 

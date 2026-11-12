@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { setTranscript, useTranscript, wordCount } from "@/lib/transcripts";
 
@@ -64,6 +65,9 @@ export function TranscriptBox({ videoId, compact }: { videoId: string; compact?:
               </button>
             )}
             <span className="text-[11px] text-ink-400">Saved in this browser only.</span>
+            <Link href="/transcripts" className="ml-auto text-xs text-ink-300 underline hover:text-ink-100">
+              Import many at once
+            </Link>
           </div>
         </div>
       )}
