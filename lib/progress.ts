@@ -7,7 +7,16 @@ export interface Answer {
   attempts: number;
 }
 
+export interface VideoTest {
+  questions: { question: string; choices: string[]; answer: number; explanation: string }[];
+  picked: (number | null)[];
+  checked: boolean;
+  passed: boolean;
+  fromTranscript: boolean;
+}
+
 export interface LessonProgress {
+  videoTests?: Record<string, VideoTest>; // AI-generated test after each video, by item id
   items: Record<string, boolean>; // articles / videos / readings marked done
   answers: Record<string, Answer>; // quiz questions, by question id
   buildPassed: boolean; // build tests passed at least once
@@ -55,6 +64,7 @@ export function itemDone(item: ItemMeta, p: LessonProgress): boolean {
   if (item.draft) return false;
   if (item.kind === "quiz") return item.questionIds.length > 0 && item.questionIds.every((q) => p.answers[q]?.correct);
   if (item.kind === "build") return p.buildPassed;
+  if (item.kind === "video" && p.videoTests?.[item.id]?.passed) return true;
   return !!p.items[item.id];
 }
 

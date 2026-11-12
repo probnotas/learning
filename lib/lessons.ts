@@ -38,7 +38,7 @@ function parseLesson(id: string): LessonMeta {
       questionIds = [...block.matchAll(/<Q\b[^>]*?\bid="([^"]+)"/g)].map((q) => q[1]);
     }
     const draft = /\bdraft\b/.test(m[2]) || (kind === "build" && !fs.existsSync(path.join(buildDir(id), "tests.js")));
-    items.push({ id: a.id, kind, title: a.title ?? a.id, draft, questionIds });
+    items.push({ id: a.id, kind, title: a.title ?? a.id, draft, questionIds, ...(a.youtube ? { youtube: a.youtube } : {}) });
   }
 
   return {
@@ -106,6 +106,24 @@ export function readLessonSource(id: string): string | null {
   if (!ID_RE.test(id)) return null;
   const file = path.join(LESSONS_DIR, `${id}.mdx`);
   return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
+}
+
+/** Plain-text version of a lesson for AI context: articles, video notes and reading notes
+ *  (practice answers and build solutions are left out on purpose). */
+export function lessonPlainText(id: string): string {
+  const src = readLessonSource(id);
+  if (!src) return "";
+  const { content } = matter(src);
+  return content
+    .replace(/<Quiz\b[\s\S]*?<\/Quiz>/g, "")
+    .replace(/<Quiz\b[^>]*\/>/g, "")
+    .replace(/<Build\b[\s\S]*?<\/Build>/g, "")
+    .replace(/<Build\b[^>]*\/>/g, "")
+    .replace(/<(Article|Watch|Read)\b[^>]*title="([^"]*)"[^>]*>/g, (_m, tag: string, title: string) => `\n[${tag === "Watch" ? "Video" : tag === "Read" ? "Reading" : "Article"}: ${title}]\n`)
+    .replace(/<\/?[A-Z][A-Za-z]*\b[^>]*>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 18000);
 }
 
 export function readBuildFiles(id: string): BuildFiles | null {

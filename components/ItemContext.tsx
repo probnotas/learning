@@ -5,6 +5,7 @@ import type { LessonMeta } from "@/lib/types";
 export interface ItemCtx {
   meta: LessonMeta;
   activeItem: string;
+  context: string; // lesson text (articles + video/reading notes) for AI features
   goNext: () => void; // navigate to the next item (or back to the unit when done)
 }
 

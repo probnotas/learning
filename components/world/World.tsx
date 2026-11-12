@@ -4,12 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { itemDone, lessonPassed, lessonStarted, lockInfo, lp, nextLesson, unitLessons, unitMastery } from "@/lib/progress";
 import { updateLesson, useAppState } from "@/lib/store";
 import type { LessonMeta, Unit } from "@/lib/types";
-import { difficulty, siteFor, WORLD_IMAGE, YEAR2_SITE, type Site } from "@/lib/world";
+import { difficulty, lessonSpot, siteFor, WORLD_IMAGE, YEAR2_SITE, type Site } from "@/lib/world";
 import { earnedXP, lessonXP } from "@/lib/xp";
 import { useIndex } from "../IndexProvider";
 import { LevelPill, ThemeToggle } from "../Chrome";
 
 const AR = WORLD_IMAGE.width / WORLD_IMAGE.height;
+
+interface Cam {
+  X: number;
+  Y: number;
+  s: number;
+}
 
 /** The campus map: units are buildings; pick one and the camera flies in. */
 export function World({ initialUnit }: { initialUnit?: string }) {
@@ -26,6 +32,7 @@ export function World({ initialUnit }: { initialUnit?: string }) {
   const [selected, setSelected] = useState<string | null>(initialUnit ?? null);
   const [zoomed, setZoomed] = useState(!!initialUnit);
   const [lessonIdx, setLessonIdx] = useState(0);
+  const [manual, setManual] = useState<Cam | null>(null); // set while you drag / scroll the map
 
   // Default selection: the unit (and lesson) you should do next.
   useEffect(() => {
@@ -38,12 +45,16 @@ export function World({ initialUnit }: { initialUnit?: string }) {
     const lessons = unitLessons(index, unit);
     const i = lessons.findIndex((l) => !lessonPassed(l, lp(state, l.id)));
     setLessonIdx(i < 0 ? 0 : i);
+    // The camera follows the card: fly in to the lesson it shows.
+    const t = setTimeout(() => setZoomed(true), 350);
+    return () => clearTimeout(t);
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectUnit = useCallback(
     (topic: string, zoom = true) => {
       setSelected(topic);
       setZoomed(zoom);
+      setManual(null);
       const unit = index.units.find((u) => u.topic === topic)!;
       const lessons = unitLessons(index, unit);
       const i = lessons.findIndex((l) => !lessonPassed(l, lp(state, l.id)));
@@ -56,19 +67,31 @@ export function World({ initialUnit }: { initialUnit?: string }) {
   const unit = index.units.find((u) => u.topic === selected) ?? null;
   const lessons = unit ? unitLessons(index, unit) : [];
   const lesson = lessons[Math.min(lessonIdx, Math.max(0, lessons.length - 1))];
+  /** Show lesson i on the card and fly the camera to its spot. */
+  const focusLesson = useCallback(
+    (i: number) => {
+      setLessonIdx(Math.max(0, Math.min(i, lessons.length - 1)));
+      setZoomed(true);
+      setManual(null);
+      if (unit) window.history.replaceState(null, "", `/unit/${unit.topic.toLowerCase()}`);
+    },
+    [lessons.length, unit],
+  );
+  const zoomOut = () => {
+    setZoomed(false);
+    setManual(null);
+    window.history.replaceState(null, "", "/");
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setZoomed(false);
-        window.history.replaceState(null, "", "/");
-      }
-      if (e.key === "ArrowRight") setLessonIdx((i) => Math.min(i + 1, lessons.length - 1));
-      if (e.key === "ArrowLeft") setLessonIdx((i) => Math.max(i - 1, 0));
+      if (e.key === "Escape") zoomOut();
+      if (e.key === "ArrowRight") focusLesson(lessonIdx + 1);
+      if (e.key === "ArrowLeft") focusLesson(lessonIdx - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lessons.length]);
+  });
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#0d2a3a] font-sans text-white">
@@ -79,6 +102,11 @@ export function World({ initialUnit }: { initialUnit?: string }) {
         selected={selected}
         zoomed={zoomed}
         onPick={(t) => selectUnit(t)}
+        lessons={lessons}
+        lessonIdx={lessonIdx}
+        onPickLesson={focusLesson}
+        manual={manual}
+        setManual={setManual}
         hydrated={hydrated}
       />
 
@@ -86,7 +114,7 @@ export function World({ initialUnit }: { initialUnit?: string }) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,0.45))]" />
 
       {/* top bar */}
-      <Link href="/" onClick={() => setZoomed(false)} className="absolute left-8 top-6 text-3xl font-bold tracking-tight drop-shadow-lg">
+      <Link href="/" onClick={zoomOut} className="absolute left-8 top-6 text-3xl font-bold tracking-tight drop-shadow-lg">
         learn<span className="text-lime-300">lab</span>
       </Link>
       <div className="absolute right-6 top-6 flex items-center gap-3">
@@ -104,10 +132,7 @@ export function World({ initialUnit }: { initialUnit?: string }) {
             <button
               key={l.id}
               title={l.title}
-              onClick={() => {
-                setLessonIdx(i);
-                if (unit && !zoomed) selectUnit(unit.topic);
-              }}
+              onClick={() => focusLesson(i)}
               className={`relative flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
                 active ? "bg-white text-neutral-900" : passed ? "bg-green-500/90 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"
               }`}
@@ -134,26 +159,27 @@ export function World({ initialUnit }: { initialUnit?: string }) {
           lesson={lesson}
           index={lessonIdx}
           count={lessons.length}
-          onPrev={() => setLessonIdx((i) => Math.max(0, i - 1))}
-          onNext={() => setLessonIdx((i) => Math.min(lessons.length - 1, i + 1))}
+          onPrev={() => focusLesson(lessonIdx - 1)}
+          onNext={() => focusLesson(lessonIdx + 1)}
           site={sites[unit.topic]}
           hydrated={hydrated}
         />
       )}
 
       {/* recenter */}
-      {zoomed && (
+      {(zoomed || manual) && (
         <button
-          onClick={() => {
-            setZoomed(false);
-            window.history.replaceState(null, "", "/");
-          }}
+          onClick={zoomOut}
           title="Back to the whole campus (Esc)"
           className="absolute bottom-28 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-white text-xl text-neutral-900 shadow-lg hover:scale-105"
         >
           ⌖
         </button>
       )}
+
+      <p className="pointer-events-none absolute bottom-[5.6rem] left-6 hidden text-[11px] text-white/60 drop-shadow lg:block">
+        Drag to explore · scroll to zoom · Esc for the whole campus
+      </p>
 
       {/* bottom bar: units */}
       <div className="glass absolute bottom-6 left-1/2 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-full px-3 py-2">
@@ -180,6 +206,11 @@ function MapLayer({
   selected,
   zoomed,
   onPick,
+  lessons,
+  lessonIdx,
+  onPickLesson,
+  manual,
+  setManual,
   hydrated,
 }: {
   sites: Record<string, Site>;
@@ -188,13 +219,20 @@ function MapLayer({
   selected: string | null;
   zoomed: boolean;
   onPick: (topic: string) => void;
+  lessons: LessonMeta[];
+  lessonIdx: number;
+  onPickLesson: (i: number) => void;
+  manual: Cam | null;
+  setManual: (c: Cam | null) => void;
   hydrated: boolean;
 }) {
   const index = useIndex();
   const selectedYear2 = year2.find((u) => u.topic === selected);
   const [state] = useAppState();
-  const ref = useRef<HTMLDivElement>(null);
   const [vp, setVp] = useState({ w: 1440, h: 900 });
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<{ x: number; y: number; cam: Cam; moved: boolean; id: number } | null>(null);
+  const suppressClick = useRef(false);
   useEffect(() => {
     const update = () => setVp({ w: window.innerWidth, h: window.innerHeight });
     update();
@@ -205,110 +243,192 @@ function MapLayer({
   // Image sized to cover the viewport (like object-fit: cover), so pins stay on their buildings.
   const W = Math.max(vp.w, vp.h * AR);
   const H = W / AR;
+  const clamp = (c: Cam): Cam => ({
+    s: c.s,
+    X: Math.min(0, Math.max(vp.w - c.s * W, c.X)),
+    Y: Math.min(0, Math.max(vp.h - c.s * H, c.Y)),
+  });
+
   const site = selected ? sites[selected] : null;
-  let s = 1, X = (vp.w - W) / 2, Y = (vp.h - H) / 2;
-  if (zoomed && site) {
-    s = site.zoom;
+  const spot = site && lessons.length ? lessonSpot(site, lessonIdx, lessons.length) : site;
+
+  // Where the camera wants to be: the whole campus, or the selected lesson's spot.
+  let auto: Cam = { s: 1, X: (vp.w - W) / 2, Y: (vp.h - H) / 2 };
+  if (zoomed && site && spot) {
+    const s = site.zoom;
     const cardSpace = vp.w > 1024 ? 210 : 0; // keep the building left of the lesson card
-    X = vp.w / 2 - cardSpace - s * site.x * W;
-    Y = vp.h * 0.5 - s * site.y * H;
-    X = Math.min(0, Math.max(vp.w - s * W, X));
-    Y = Math.min(0, Math.max(vp.h - s * H, Y));
+    auto = clamp({ s, X: vp.w / 2 - cardSpace - s * spot.x * W, Y: vp.h * 0.5 - s * spot.y * H });
   }
+  const cam = manual ?? auto;
+  const { s } = cam;
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    drag.current = { x: e.clientX, y: e.clientY, cam, moved: false, id: e.pointerId };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 5) return;
+    if (!d.moved) {
+      d.moved = true;
+      setDragging(true);
+      (e.currentTarget as HTMLElement).setPointerCapture(d.id);
+    }
+    setManual(clamp({ s: d.cam.s, X: d.cam.X + dx, Y: d.cam.Y + dy }));
+  };
+  const endDrag = () => {
+    if (drag.current?.moved) suppressClick.current = true;
+    drag.current = null;
+    setDragging(false);
+  };
+  const onWheel = (e: React.WheelEvent) => {
+    const ns = Math.min(3, Math.max(1, s * Math.exp(-e.deltaY * 0.0015)));
+    if (ns === s) return;
+    const k = ns / s;
+    setManual(clamp({ s: ns, X: e.clientX - (e.clientX - cam.X) * k, Y: e.clientY - (e.clientY - cam.Y) * k }));
+  };
+
+  const ease = dragging ? "none" : manual ? "transform 0.18s ease-out" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)";
 
   return (
     <div
-      ref={ref}
-      className="absolute left-0 top-0 origin-top-left"
-      style={{
-        width: W,
-        height: H,
-        transform: `translate(${X}px, ${Y}px) scale(${s})`,
-        transition: "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)",
+      className={`absolute inset-0 touch-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onWheel={onWheel}
+      onClickCapture={(e) => {
+        if (suppressClick.current) {
+          suppressClick.current = false;
+          e.stopPropagation();
+          e.preventDefault();
+        }
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={WORLD_IMAGE.src} alt="Campus map" className="h-full w-full select-none" draggable={false} />
+      <div
+        className="absolute left-0 top-0 origin-top-left"
+        style={{ width: W, height: H, transform: `translate(${cam.X}px, ${cam.Y}px) scale(${s})`, transition: ease }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={WORLD_IMAGE.src} alt="Campus map" className="pointer-events-none h-full w-full select-none" draggable={false} />
 
-      {/* light beam on the selected building */}
-      {site && (
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: `${site.x * 100}%`,
-            top: 0,
-            height: `${site.y * 100}%`,
-            width: 80 / s,
-            transform: "translateX(-50%)",
-            background: "linear-gradient(to bottom, rgba(190,242,100,0) 0%, rgba(190,242,100,0.35) 55%, rgba(220,255,200,0.85) 100%)",
-            filter: "blur(6px)",
-            mixBlendMode: "screen",
-            animation: "beam 3s ease-in-out infinite",
-          }}
-        />
-      )}
+        {/* light beam on the card's lesson */}
+        {spot && (
+          <div
+            className="pointer-events-none absolute"
+            style={{
+              left: `${spot.x * 100}%`,
+              top: 0,
+              height: `${spot.y * 100}%`,
+              width: 80 / s,
+              transform: "translateX(-50%)",
+              background: "linear-gradient(to bottom, rgba(190,242,100,0) 0%, rgba(190,242,100,0.35) 55%, rgba(220,255,200,0.85) 100%)",
+              filter: "blur(6px)",
+              mixBlendMode: "screen",
+              animation: "beam 3s ease-in-out infinite",
+              transition: "left 0.9s ease, height 0.9s ease",
+            }}
+          />
+        )}
 
-      {/* building pins */}
-      {units.map((u) => {
-        const st = sites[u.topic];
-        const isSel = u.topic === selected;
-        const first = unitLessons(index, u)[0];
-        const locked = hydrated && first ? lockInfo(index, state, first).locked : false;
-        const pct = hydrated ? Math.round(unitMastery(index, state, u) * 100) : 0;
-        return (
-          <button
-            key={u.topic}
-            onClick={() => onPick(u.topic)}
-            className="group absolute"
-            style={{ left: `${st.x * 100}%`, top: `${st.y * 100}%`, transform: `translate(-50%, -50%) scale(${1 / s})`, transition: "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)" }}
-          >
-            {isSel && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
-            <span
-              className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg ${
-                isSel ? "border-white bg-white text-neutral-900" : "border-white/80 text-white"
-              } ${locked && !isSel ? "opacity-70" : ""}`}
-              style={isSel ? undefined : { background: `${st.color}cc` }}
+        {/* unit pins (hidden for the selected unit once you're zoomed in: its lessons show instead) */}
+        {units.map((u) => {
+          const st = sites[u.topic];
+          const isSel = u.topic === selected;
+          if (isSel && zoomed && lessons.length > 1) return null;
+          const first = unitLessons(index, u)[0];
+          const locked = hydrated && first ? lockInfo(index, state, first).locked : false;
+          const pct = hydrated ? Math.round(unitMastery(index, state, u) * 100) : 0;
+          return (
+            <button
+              key={u.topic}
+              onClick={() => onPick(u.topic)}
+              className="group absolute"
+              style={{ left: `${st.x * 100}%`, top: `${st.y * 100}%`, transform: `translate(-50%, -50%) scale(${1 / s})`, transition: ease === "none" ? "none" : "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)" }}
             >
-              {pct === 100 ? "✓" : u.topic}
+              {isSel && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
+              <span
+                className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg ${
+                  isSel ? "border-white bg-white text-neutral-900" : "border-white/80 text-white"
+                } ${locked && !isSel ? "opacity-70" : ""}`}
+                style={isSel ? undefined : { background: `${st.color}cc` }}
+              >
+                {pct === 100 ? "✓" : u.topic}
+              </span>
+              {(!zoomed || isSel) && (
+                <span className="absolute left-1/2 top-12 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur group-hover:bg-black/75">
+                  {locked ? "🔒 " : ""}
+                  {u.title}
+                  {pct > 0 && pct < 100 ? ` · ${pct}%` : ""}
+                </span>
+              )}
+            </button>
+          );
+        })}
+
+        {/* lesson pins around the selected building */}
+        {site && zoomed && lessons.length > 1 &&
+          lessons.map((l, i) => {
+            const sp = lessonSpot(site, i, lessons.length);
+            const active = i === lessonIdx;
+            const passed = hydrated && lessonPassed(l, lp(state, l.id));
+            const locked = hydrated && lockInfo(index, state, l).locked;
+            return (
+              <button
+                key={l.id}
+                onClick={() => onPickLesson(i)}
+                title={l.title}
+                className="group absolute"
+                style={{ left: `${sp.x * 100}%`, top: `${sp.y * 100}%`, transform: `translate(-50%, -50%) scale(${1 / s})` }}
+              >
+                {active && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
+                <span
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg ${
+                    active ? "border-white bg-white text-neutral-900" : passed ? "border-white/80 bg-green-500 text-white" : "border-white/80 bg-black/55 text-white"
+                  } ${locked && !active ? "opacity-60" : ""}`}
+                >
+                  {passed ? "✓" : String(i + 1).padStart(2, "0")}
+                </span>
+                {active && (
+                  <span className="absolute left-1/2 top-11 max-w-[220px] -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+                    {locked ? "🔒 " : ""}
+                    {l.title}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+        {/* one pin for the whole Year 2 district */}
+        {year2.length > 0 && (
+          <button
+            onClick={() => onPick(selectedYear2?.topic ?? year2[0].topic)}
+            className="group absolute"
+            style={{
+              left: `${YEAR2_SITE.x * 100}%`,
+              top: `${YEAR2_SITE.y * 100}%`,
+              transform: `translate(-50%, -50%) scale(${1 / s})`,
+            }}
+          >
+            {selectedYear2 && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
+            <span
+              className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed text-xs font-bold shadow-lg ${
+                selectedYear2 ? "border-white bg-white text-neutral-900" : "border-white/80 bg-slate-500/70 text-white"
+              }`}
+            >
+              {selectedYear2 ? selectedYear2.topic : "Y2"}
             </span>
-            {(!zoomed || isSel) && (
-              <span className="absolute left-1/2 top-12 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur group-hover:bg-black/75">
-                {locked ? "🔒 " : ""}
-                {u.title}
-                {pct > 0 && pct < 100 ? ` · ${pct}%` : ""}
+            {(!zoomed || selectedYear2) && (
+              <span className="absolute left-1/2 top-12 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+                {selectedYear2 ? `${selectedYear2.title} · planned` : `Year 2 district · ${year2.length} units`}
               </span>
             )}
           </button>
-        );
-      })}
-
-      {/* one pin for the whole Year 2 district */}
-      {year2.length > 0 && (
-        <button
-          onClick={() => onPick(selectedYear2?.topic ?? year2[0].topic)}
-          className="group absolute"
-          style={{
-            left: `${YEAR2_SITE.x * 100}%`,
-            top: `${YEAR2_SITE.y * 100}%`,
-            transform: `translate(-50%, -50%) scale(${1 / s})`,
-            transition: "transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1)",
-          }}
-        >
-          {selectedYear2 && <span className="absolute inset-0 rounded-full bg-white/60" style={{ animation: "ping-soft 1.8s ease-out infinite" }} />}
-          <span
-            className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed text-xs font-bold shadow-lg ${
-              selectedYear2 ? "border-white bg-white text-neutral-900" : "border-white/80 bg-slate-500/70 text-white"
-            }`}
-          >
-            {selectedYear2 ? selectedYear2.topic : "Y2"}
-          </span>
-          {(!zoomed || selectedYear2) && (
-            <span className="absolute left-1/2 top-12 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
-              {selectedYear2 ? `${selectedYear2.title} · planned` : `Year 2 district · ${year2.length} units`}
-            </span>
-          )}
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

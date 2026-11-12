@@ -7,7 +7,7 @@ import { BuildPanel } from "@/components/BuildPanel";
 import { LessonStage } from "@/components/LessonStage";
 import { Callout, ProjectLink } from "@/components/mdx/Callout";
 import { Article, BuildItem, Choice, Q, Quiz, Read, Solution, Watch } from "@/components/mdx/Items";
-import { loadIndex, readBuildFiles, readLessonSource } from "@/lib/lessons";
+import { lessonPlainText, loadIndex, readBuildFiles, readLessonSource } from "@/lib/lessons";
 
 export const dynamicParams = false;
 
@@ -56,7 +56,7 @@ export default async function ItemPage({ params }: { params: { lessonId: string;
   });
 
   return (
-    <LessonStage meta={meta} unit={unit} activeItem={params.itemId}>
+    <LessonStage meta={meta} unit={unit} activeItem={params.itemId} context={lessonPlainText(meta.id)}>
       {content}
     </LessonStage>
   );

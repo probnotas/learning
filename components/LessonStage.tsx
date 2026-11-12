@@ -8,6 +8,7 @@ import type { LessonMeta, Unit } from "@/lib/types";
 import { siteFor } from "@/lib/world";
 import { BackButton, LevelPill, ThemeToggle } from "./Chrome";
 import { KIND_LABEL } from "./Icons";
+import { StudyPanel } from "./ai/StudyPanel";
 import { useIndex } from "./IndexProvider";
 import { ItemProvider } from "./ItemContext";
 
@@ -17,11 +18,13 @@ export function LessonStage({
   meta,
   unit,
   activeItem,
+  context,
   children,
 }: {
   meta: LessonMeta;
   unit: Unit;
   activeItem: string;
+  context: string;
   children: React.ReactNode;
 }) {
   const index = useIndex();
@@ -67,7 +70,7 @@ export function LessonStage({
   const nextUp = passed ? nextLesson(index, state) : null;
 
   return (
-    <ItemProvider value={{ meta, activeItem, goNext }}>
+    <ItemProvider value={{ meta, activeItem, context, goNext }}>
       <div className="flex min-h-screen flex-col bg-ink-950 font-sans lg:h-screen">
         {/* top row */}
         <div className="flex items-center gap-4 px-6 pb-4 pt-6 lg:px-10">
@@ -82,7 +85,7 @@ export function LessonStage({
           <LevelPill light />
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-10 lg:pb-8">
+        <div className="grid min-h-0 flex-1 gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-10 lg:pb-8">
           {/* the stage */}
           <section className="stage relative flex min-h-[70vh] flex-col overflow-hidden rounded-[32px] shadow-xl lg:min-h-0">
             <div className="flex items-center justify-between px-8 pt-7">
@@ -172,44 +175,11 @@ export function LessonStage({
             </div>
           </section>
 
-          {/* notes */}
-          <NotesPanel lessonId={meta.id} initial={p.notes} hydrated={hydrated} />
+          {/* notes + ask AI */}
+          <StudyPanel meta={meta} activeItem={activeItem} context={context} initialNotes={p.notes} hydrated={hydrated} />
         </div>
       </div>
     </ItemProvider>
-  );
-}
-
-function NotesPanel({ lessonId, initial, hydrated }: { lessonId: string; initial: string; hydrated: boolean }) {
-  const [text, setText] = useState(initial);
-  const [saved, setSaved] = useState(true);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => {
-    if (hydrated) setText(initial);
-  }, [hydrated, lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <section className="flex min-h-[320px] flex-col overflow-hidden rounded-[32px] border border-ink-800 bg-ink-900 shadow-sm">
-      <div className="flex items-center gap-3 bg-ink-850 px-6 py-5">
-        <span className="text-xl">🗒️</span>
-        <h2 className="flex-1 text-lg font-semibold text-ink-100">Notes</h2>
-        <span className="text-xs text-ink-400">{saved ? "Saved" : "Saving…"}</span>
-      </div>
-      <textarea
-        value={text}
-        onChange={(e) => {
-          const v = e.target.value;
-          setText(v);
-          setSaved(false);
-          clearTimeout(timer.current);
-          timer.current = setTimeout(() => {
-            updateLesson(lessonId, (x) => ({ ...x, notes: v }));
-            setSaved(true);
-          }, 500);
-        }}
-        placeholder={"Take notes while you watch and work.\n\nThey're saved for this lesson and collected in your notebook."}
-        className="min-h-0 flex-1 resize-none bg-transparent px-6 py-5 font-serif text-[15px] leading-relaxed text-ink-100 placeholder:text-ink-400 focus:outline-none"
-      />
-    </section>
   );
 }
 

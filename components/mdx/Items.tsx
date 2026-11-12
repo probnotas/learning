@@ -5,6 +5,7 @@ import { useState } from "react";
 import { lp } from "@/lib/progress";
 import { updateLesson, useAppState } from "@/lib/store";
 import { useItemCtx } from "../ItemContext";
+import { VideoTest } from "../ai/VideoTest";
 import { GenerateLessonButton } from "./Draft";
 
 function useActive(id: string) {
@@ -128,7 +129,7 @@ export function Watch({
         </a>
       </p>
       {children && <div className="lesson-prose prose mt-4 max-w-none">{children}</div>}
-      <DoneButton id={id} label="I watched it, next" />
+      <VideoTest id={id} title={title} youtube={youtube} />
     </div>
   );
 }

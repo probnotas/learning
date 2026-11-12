@@ -41,6 +41,7 @@ export interface ItemMeta {
   kind: ItemKind;
   title: string;
   draft: boolean; // not written yet (stub lessons)
+  youtube?: string; // video items: YouTube id
   questionIds: string[]; // quiz only
 }
 
