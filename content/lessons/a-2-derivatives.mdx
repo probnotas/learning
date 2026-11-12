@@ -1,0 +1,148 @@
+---
+title: "Derivatives, sensitivities, and autodiff"
+topic: A2
+month: 3
+order: 9
+status: full
+hours: 8
+summary: "18.01 Unit 1. The derivative rules, plus the one idea that makes them matter for self-models — how much does the prediction change when a body parameter changes?"
+---
+
+## Why this matters
+
+Every gradient-based self-model, from a fitted physical parameter to a Dreamer world model, runs on one quantity: $\partial(\text{prediction})/\partial(\text{parameter})$. How much would the predicted arm angle change if the mass were a little different? If you can compute that, you can fit the mass from data (Gauss–Newton or gradient descent), estimate how detectable a mass change is at a given drive frequency, and know which parameters your data actually pins down. 18.01's derivative rules (product, quotient, chain, implicit) are exactly the rules an automatic-differentiation engine applies mechanically. In this build you write that engine yourself, about 60 lines of dual numbers, and use it to recover the arm's mass from four seconds of encoder data.
+
+## Watch / Read
+
+<Read id="r1" title="MIT 18.01SC Unit 1, Part A · Definition and basic rules" href="https://ocw.mit.edu/courses/18-01sc-single-variable-calculus-fall-2010/pages/1.-differentiation/part-a-definition-and-basic-rules/" where="Sessions 1–12: derivative as rate of change, limits and continuity, derivatives of sine and cosine, product, quotient and chain rules, higher derivatives. Watch the lecture clips, then do the problems attached to each session and the Part A problem set.">
+Prof. Jerison's lectures plus recitation videos and problems with solutions, free on MIT OpenCourseWare.
+</Read>
+
+<Read id="r2" title="MIT 18.01SC Unit 1, Part B · Implicit differentiation and inverse functions" href="https://ocw.mit.edu/courses/18-01sc-single-variable-calculus-fall-2010/pages/1.-differentiation/part-b-implicit-differentiation-and-inverse-functions/" where="Sessions 13–20: implicit differentiation, inverse functions, exponentials and logarithms, hyperbolic functions. Do the session problems and the Part B problem set.">
+Sessions 17–18 (exponentials) connect straight back to the oscillator lessons.
+</Read>
+
+<Watch id="v1" title="Calculus Ch 6 · Implicit differentiation, what's going on here?" youtube="qb40J4N1fa4" minutes={15} />
+
+<Watch id="v2" title="Calculus Ch 7 · Limits, L'Hôpital's rule, and epsilon delta definitions" youtube="kfF40MiS7zA" minutes={18} />
+
+## Core ideas
+
+- **The derivative is the best linear approximation.** $f(x + h) \approx f(x) + f'(x)\,h$. Everything else is rules for computing $f'$.
+- **Three rules cover almost everything:** product $(fg)' = f'g + fg'$, quotient, and chain $(f\circ g)' = f'(g)\,g'$. Together with the derivatives of $\sin$, $\cos$, $e^x$, $\ln x$ and $x^n$.
+- **Sensitivity is a derivative with respect to a parameter, not time.** $\partial\omega_n/\partial m$, $\partial\ddot\theta/\partial k$, $\partial\theta(t)/\partial m$. The same rules apply.
+- **Implicit differentiation handles constraints.** The bob on a circle, $x^2 + y^2 = L^2$, gives $dy/dx = -x/y$ without solving for $y$.
+- **Limits are where small-angle physics comes from.** $\lim_{h\to0}\sin h/h = 1$ is the statement that $\sin\theta \approx \theta$, the linearization behind every lesson so far.
+- **Forward-mode autodiff = carry $(v, \dot v)$ through the program.** Each operation applies its derivative rule. The result is exact, unlike a finite difference, which has to pick a step size.
+- **Sensitivities propagate through time.** $\partial\theta_{t+1}/\partial m$ depends on $\partial\theta_t/\partial m$. Differentiating a rollout is the chain rule applied once per time step: backpropagation through time, run forwards.
+- **Gauss–Newton uses sensitivities to fit.** Residuals times sensitivities, divided by sensitivities squared, gives the step. It converges in a handful of iterations for well-excited data.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="Product rule">
+
+Differentiate $f(x) = x^2\sin x$. Evaluate at $x = 1.3$.
+
+<Solution>
+
+$f'(x) = 2x\sin x + x^2\cos x$. At 1.3: $2.6\cdot0.96356 + 1.69\cdot0.26750 = 2.5053 + 0.4521 = 2.9574$.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="Stiffness sensitivity of the resonance">
+
+$\omega_n = \sqrt{(k + mgL)/(mL^2)}$. Compute $\partial\omega_n/\partial k$ at the defaults. If you swapped in a spring 10% stiffer, roughly how far would the resonance move?
+
+<Solution>
+
+Chain rule: $\partial\omega_n/\partial k = \dfrac{1}{2\omega_n}\cdot\dfrac{1}{mL^2} = \dfrac{1}{2\cdot4.4508} = 0.11234$ rad/s per N·m/rad.
+$\Delta k = 1 \Rightarrow \Delta\omega_n \approx 0.112$ rad/s (exact: $\sqrt{20.81} - \sqrt{19.81} = 0.1111$).
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="compute" title="Mass sensitivity, and where linearization fails">
+
+Compute $\partial\omega_n/\partial m$ at $m = 1$. Use it to predict $\omega_n$ after the ×1.5 bump, and compare to the exact 4.059 rad/s.
+
+<Solution>
+
+$\omega_n^2 = k/(mL^2) + g/L$, so $2\omega_n\,\partial\omega_n/\partial m = -k/(m^2L^2)$, giving $\partial\omega_n/\partial m = -10/(2\cdot4.4508) = -1.1234$ rad/s per kg.
+Linear prediction for $\Delta m = 0.5$: $4.451 - 0.562 = 3.889$ rad/s, versus exact 4.059. The derivative overshoots because $\omega_n(m)$ curves (its slope flattens as $m$ grows). A 50% change is not "small", so for big body changes, re-solve rather than linearize.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="compute" title="Implicit differentiation: the bob's path">
+
+The bob moves on $x^2 + y^2 = L^2$ ($y$ measured downward from the pivot). Find $dy/dx$, and evaluate it at $\theta = 30°$ ($x = L\sin\theta$, $y = L\cos\theta$). What does it mean physically?
+
+<Solution>
+
+$2x + 2y\,y' = 0 \Rightarrow dy/dx = -x/y = -\tan\theta$. At 30°: $-0.577$.
+It's the slope of the bob's path: the velocity is tangent to the circle, at angle $\theta$ from horizontal. No need to solve $y = \sqrt{L^2 - x^2}$ first.
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="compute" title="Inverse function: angle from a camera">
+
+A camera tracks the bob and gives you $x$ and $y$ in meters. You compute $\theta = \arctan(x/y)$. If $y = 1$ m and the camera's $x$ estimate has 2 mm of error, how much angle error does that cause at $x = 0$? At $x = 1$ m?
+
+<Solution>
+
+$\dfrac{d}{du}\arctan u = \dfrac{1}{1+u^2}$, with $u = x/y$ and $du/dx = 1/y = 1$.
+At $x = 0$: $d\theta/dx = 1$, so 2 mm gives 0.002 rad. At $x = 1$: $d\theta/dx = 1/2$, so 0.001 rad.
+Sensitivity depends on where you are, which is why error bars on derived quantities need derivatives.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="derive" title="Sensitivity through one time step">
+
+One semi-implicit step: $\omega' = \omega + \Delta t\,\alpha(\theta, \omega; k)$, $\theta' = \theta + \Delta t\,\omega'$, with $\alpha = [k(\theta_m - \theta) - mgL\sin\theta - c\omega]/I$. Starting from a state that doesn't depend on $k$, compute $\partial\omega'/\partial k$ and $\partial\theta'/\partial k$. What changes on the *second* step?
+
+<Solution>
+
+$\partial\alpha/\partial k = (\theta_m - \theta)/I$, so $\partial\omega'/\partial k = \Delta t(\theta_m - \theta)/I$ and $\partial\theta'/\partial k = \Delta t\,\partial\omega'/\partial k = \Delta t^2(\theta_m - \theta)/I$.
+On the second step, $\theta$ and $\omega$ themselves depend on $k$, so the chain rule picks up extra terms like $\frac{\partial\alpha}{\partial\theta}\frac{\partial\theta}{\partial k}$. Sensitivities accumulate step by step. Dual numbers do this bookkeeping for you.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="compute" title="How good is sin θ ≈ θ?">
+
+Use $\lim_{h\to0}\sin h/h = 1$ and the next term of the expansion, $\sin\theta \approx \theta - \theta^3/6$, to estimate the relative error of the small-angle approximation at $\theta = 0.3$ rad and $\theta = 1$ rad.
+
+<Solution>
+
+Relative error $\approx \theta^2/6$: 1.5% at 0.3 rad (exact: $0.3$ vs $0.29552$, so 1.5% ✓) and about 17% at 1 rad (exact $0.8415$, 18.8%).
+The linear models in Month 1–2 are good to ~1% for swings under 0.3 rad and unreliable past ~0.7 rad.
+
+</Solution>
+</Problem>
+
+<Problem id="p8" kind="concept" title="Why exact derivatives, not finite differences?">
+
+You could estimate $\partial\theta(T)/\partial m$ by re-running the rollout with $m + h$. Give two reasons the dual-number version is better, and one situation where finite differences are still useful.
+
+<Solution>
+
+(1) **Accuracy:** a finite difference trades truncation error (big $h$) against floating-point cancellation (tiny $h$); dual numbers are exact to machine precision. (2) **No step size to tune**, so it's robust across parameters with very different scales. (Forward mode costs about one extra rollout per parameter; reverse mode, i.e. backprop, gets all parameters at once.)
+Finite differences remain the standard way to *test* an autodiff implementation, which is exactly what one of the build tests does.
+
+</Solution>
+</Problem>
+
+## Build
+
+Implement dual-number arithmetic (sum, product, quotient, chain rule for sin, cos, exp, sqrt), the pendulum's acceleration in dual arithmetic, a rollout that carries $\partial\theta/\partial(\text{param})$, and a Gauss–Newton fit. The demo plots a rollout alongside its exact sensitivity to mass, then recovers the heavier arm's mass from four seconds of simulated encoder data.
+
+<Build />
+
+<Callout title="Self-model connection">
+
+`fitParam` is a complete physics-based self-model update: predict, compare, and correct the body parameter along its sensitivity. Look at where $\partial\theta_a/\partial m$ is large in the plot. Those are the moments when the data carries the most information about mass. At drive frequencies where that sensitivity is tiny, no detector can see a mass change well. That's a more principled view of "which conditions make the bump detectable" than any single AUC.
+
+</Callout>

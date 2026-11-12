@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+html,
+body {
+  background: #0e1116;
+  color: #d5dbe5;
+}
+body {
+  @apply font-serif antialiased;
+}
+
+/* Lesson typography: serif body, sans headings, calm contrast. */
+.lesson-prose {
+  --tw-prose-invert-body: #d5dbe5;
+  --tw-prose-invert-headings: #eef1f6;
+  --tw-prose-invert-links: #7cc4ff;
+  --tw-prose-invert-bold: #eef1f6;
+  --tw-prose-invert-code: #f0c674;
+  --tw-prose-invert-bullets: #43506a;
+  --tw-prose-invert-hr: #2e3747;
+  --tw-prose-invert-quotes: #b3bccb;
+  --tw-prose-invert-pre-bg: #141922;
+  font-size: 1.075rem;
+  line-height: 1.75;
+}
+.lesson-prose h2 {
+  @apply mt-14 border-b border-ink-800 pb-2 font-sans text-xl font-semibold tracking-tight;
+}
+.lesson-prose > h2:first-child {
+  @apply mt-0;
+}
+.lesson-prose h3 {
+  @apply font-sans;
+}
+.lesson-prose code::before,
+.lesson-prose code::after {
+  content: "";
+}
+.lesson-prose :not(pre) > code {
+  @apply rounded bg-ink-800 px-1 py-0.5 font-mono text-[0.85em] font-normal;
+}
+.lesson-prose pre {
+  @apply border border-ink-800 font-mono text-sm;
+}
+.problem-body > :first-child,
+.callout-body > :first-child {
+  margin-top: 0;
+}
+.problem-body > :last-child,
+.callout-body > :last-child {
+  margin-bottom: 0;
+}
+.katex {
+  font-size: 1.05em;
+}
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}

@@ -1,0 +1,153 @@
+---
+title: "Eigenvalues — natural frequency, damping, and why simulators explode"
+topic: A1
+month: 1
+order: 4
+status: full
+hours: 6
+summary: "The two eigenvalues of the pendulum's A matrix are its natural frequency and damping. The mass bump moves them, which is resonance detuning in one sentence."
+---
+
+## Why this matters
+
+Resonance detuning *is* an eigenvalue story. The compliant pendulum's linearized $A$ matrix has a pair of complex eigenvalues $\lambda = -\zeta\omega_n \pm i\,\omega_n\sqrt{1-\zeta^2}$. The imaginary part is how fast it rings and the real part is how fast the ringing dies. Bumping the mass slides those eigenvalues toward the origin: $\omega_n$ drops from 4.45 to 4.06 rad/s. If you were driving near the old resonance, you're now off it, and the amplitude change that your detector scored comes straight out of that move. The same math tells you when *your simulator* is lying: a time-step matrix with an eigenvalue outside the unit circle blows up, no matter how good the physics is. This lesson finishes the 3Blue1Brown series (12 chapters, with 10–12 and 16 optional).
+
+## Watch / Read
+
+<Watch id="v1" title="Ch 13 · Change of basis" youtube="P2LTAUO1TdA" minutes={13} />
+
+<Watch id="v2" title="Ch 14 · Eigenvectors and eigenvalues" youtube="PFDu9oVAE-g" minutes={17}>
+Keep asking: which directions does this matrix only stretch, without turning?
+</Watch>
+
+<Watch id="v3" title="Ch 15 · A quick trick for computing eigenvalues" youtube="e50Bj7jn9IQ" minutes={13}>
+The "mean ± √(mean² − product)" trick is what you'll implement in the build.
+</Watch>
+
+<Read id="r1" title="ROB 101 textbook · §10.2–10.3 and Appendix A.1.3" href="https://grizzle.robotics.umich.edu/files/ROB_101_Textbook_W_23_Grizzle_linked_to_GitHub.pdf" where="§10.2 basis vectors, coordinates, dimension (p. 204). §10.3 eigenvalues and eigenvectors (pp. 210–216). Appendix A.1.3 iterating with complex numbers: background for eigenvalues (p. 332). Printed page numbers, Winter 2023 PDF.">
+The appendix is short and makes the "complex eigenvalue = rotation" idea concrete.
+</Read>
+
+## Core ideas
+
+- **Eigenvectors are directions that only stretch.** $Av = \lambda v$: along $v$, the matrix acts like the plain number $\lambda$.
+- **Find $\lambda$ from $\det(A - \lambda I) = 0$.** For $2\times 2$: $\lambda = m \pm \sqrt{m^2 - p}$, with $m$ = half the trace and $p$ = the determinant.
+- **Complex eigenvalues mean rotation, which means oscillation.** No real direction is preserved; the state spirals. Imaginary part = angular frequency, real part = growth or decay rate.
+- **For an oscillator, $A = \begin{bmatrix} 0 & 1 \\ -\omega_n^2 & -2\zeta\omega_n\end{bmatrix}$.** So $\omega_n = \sqrt{\det A}$ and $\zeta = -\operatorname{tr}A / (2\omega_n)$. You can read physics straight off the matrix.
+- **Gravity is part of the stiffness.** For the compliant pendulum $\omega_n^2 = (k + mgL)/(mL^2) = k/(mL^2) + g/L$. The formula $\sqrt{k/(mL^2)}$ underestimates $\omega_n$ by about 30% at the defaults.
+- **Discrete time: a step matrix $M$ is stable iff every $|\mu| \le 1$.** The simulation multiplies the state by $M$ each step, so any eigenvalue with $|\mu| \gt 1$ grows without bound.
+- **Explicit Euler adds energy to oscillators** ($|\mu|^2 = 1 - \Delta t\gamma + \Delta t^2\omega_n^2$). **Semi-implicit Euler doesn't** ($\det M = 1 - \Delta t\gamma$), as long as $\Delta t\,\omega_n \lt 2$.
+- **Change of basis to the eigenvectors decouples the dynamics.** Each mode evolves on its own. That's why "the resonance" is a single number you can track.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="Triangular matrices">
+
+Find the eigenvalues and eigenvectors of $\begin{bmatrix} 2 & 1 \\ 0 & 3 \end{bmatrix}$.
+
+<Solution>
+
+Triangular, so the eigenvalues are on the diagonal: $\lambda = 2, 3$.
+$\lambda = 2$: $(A - 2I)v = \begin{bmatrix}0&1\\0&1\end{bmatrix}v = 0 \Rightarrow v = [1, 0]$.
+$\lambda = 3$: $\begin{bmatrix}-1&1\\0&0\end{bmatrix}v = 0 \Rightarrow v = [1, 1]$.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="Read the pendulum's physics off its matrix">
+
+For $A = \begin{bmatrix} 0 & 1 \\ -19.81 & -0.1 \end{bmatrix}$ (defaults), compute the eigenvalues with the quick trick, then $\omega_n$ and $\zeta$.
+
+<Solution>
+
+$m = -0.05$, $p = 19.81$. $\lambda = -0.05 \pm \sqrt{0.0025 - 19.81} = -0.05 \pm 4.4506\,i$.
+$\omega_n = \sqrt{19.81} = 4.4508$ rad/s and $\zeta = 0.1/(2\cdot4.4508) = 0.0112$. The pendulum rings at about 0.71 Hz and is very lightly damped.
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="concept" title="Which ωₙ is right?">
+
+A spec you might write (or might have written) uses $\omega_n = \sqrt{k/(mL^2)} = 3.16$ rad/s. Your eigenvalue says 4.45 rad/s. Which one is the small-oscillation resonance of the arm hanging down, and why does the difference matter for a detuning experiment?
+
+<Solution>
+
+4.45 rad/s. Gravity's restoring torque $mgL\sin\theta \approx mgL\theta$ acts like an extra torsional spring in parallel with $k$. If you set the drive to "$\omega_n$" using the gravity-free formula, you're driving at 3.16 rad/s, well *below* the real resonance, and the response to a mass bump has a different sign there than near 4.45 (see the B1 resonance lesson). It's also an easy way to lose a research-lab conversation.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="compute" title="The mass bump moves the eigenvalues">
+
+Recompute $\omega_n$ and $\zeta$ with $m = 1.5$ kg. Compare the relative change in $\omega_n$ to what the gravity-free formula predicts.
+
+<Solution>
+
+$\omega_n^2 = (10 + 14.715)/1.5 = 16.477$, so $\omega_n = 4.059$ rad/s ($-8.8\%$). $\zeta = (0.1/1.5)/(2\cdot 4.059) = 0.0082$.
+Gravity-free: $\sqrt{10/1.5} = 2.582$, which is $-18\%$. Because $g/L$ doesn't depend on mass, gravity *anchors* $\omega_n$, and the real shift is about half what the naive formula says.
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="compute" title="Explicit Euler, quantified">
+
+For $M = I + \Delta t A$ with $\Delta t = 0.01$, compute $|\mu|$ and the amplitude growth factor after 300 steps. How much damping $c$ would you need for explicit Euler to stop gaining energy?
+
+<Solution>
+
+$|\mu|^2 = \det M = 1 - \Delta t\gamma + \Delta t^2\omega_n^2 = 1 - 0.001 + 0.001981 = 1.000981$, so $|\mu| = 1.00049$.
+After 300 steps: $1.00049^{300} \approx 1.16$, a 16% amplitude gain in 3 s. That's the drift in the lesson-1 plot.
+Stability needs $\gamma \ge \Delta t\,\omega_n^2$, i.e. $c/I \ge 0.198$, so $c \ge 0.198$ N·m·s/rad: about double the physical damping, all of it numerical.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="derive" title="Why semi-implicit Euler behaves">
+
+Write one semi-implicit step ($\dot\theta' = \dot\theta + \Delta t(-\omega_n^2\theta - \gamma\dot\theta)$, then $\theta' = \theta + \Delta t\,\dot\theta'$) as a matrix and show $\det M = 1 - \Delta t\gamma$.
+
+<Solution>
+
+$\dot\theta' = -\Delta t\omega_n^2\,\theta + (1 - \Delta t\gamma)\dot\theta$ and $\theta' = (1 - \Delta t^2\omega_n^2)\theta + \Delta t(1 - \Delta t\gamma)\dot\theta$.
+$M = \begin{bmatrix} 1 - \Delta t^2\omega_n^2 & \Delta t(1 - \Delta t\gamma) \\ -\Delta t\omega_n^2 & 1 - \Delta t\gamma\end{bmatrix}$, and
+$\det M = (1 - \Delta t\gamma)\left[(1 - \Delta t^2\omega_n^2) + \Delta t^2\omega_n^2\right] = 1 - \Delta t\gamma$.
+With no damping, $\det M = 1$ exactly: area is preserved and energy can't drift away. With damping it shrinks, as it should.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="estimate" title="The playground's stiffest corner">
+
+At $m = 0.1$, $L = 0.2$, $k = 50$, $c = 2$ (all slider extremes), with $\Delta t = 0.002$: is semi-implicit Euler stable? Check $\Delta t\,\omega_n$ and $\Delta t\,\gamma$.
+
+<Solution>
+
+$I = 0.004$. $\omega_n^2 = (50 + 0.196)/0.004 = 12549$, so $\omega_n = 112$ rad/s and $\Delta t\,\omega_n = 0.224 \lt 2$ ✓.
+$\gamma = c/I = 500$, so $\Delta t\gamma = 1.0$. $\det M = 0$: the integrator wipes out the velocity in a single step. It's still stable ($\Delta t\gamma \lt 2$), but it's badly distorting the physics (the real system has $\zeta = 500/(2\cdot112) = 2.2$, overdamped). In practice, clamp $\Delta t\gamma$ and $\Delta t\omega_n$ or sub-step.
+
+</Solution>
+</Problem>
+
+<Problem id="p8" kind="estimate" title="How long is 'steady state'?">
+
+Transients decay like $e^{-\zeta\omega_n t}$. At the defaults, what's the time constant, and how long until a transient falls below 1%? Now: your detector measured "steady-state amplitude over the last 2 seconds" right after a mass bump. What was it actually measuring?
+
+<Solution>
+
+$\zeta\omega_n = \gamma/2 = 0.05$ s⁻¹, so $\tau = 20$ s. 1% takes $\ln(100)\cdot 20 \approx 92$ s.
+So a 2-second window shortly after the bump measures a **transient**: the free ringing at the new $\omega_n$ beating against the drive. Its amplitude depends on the phase at which the bump happened. That alone can scramble a detector's ranking. You'll measure this directly in the B1 resonance lesson.
+
+</Solution>
+</Problem>
+
+## Build
+
+You'll implement the $2\times2$ eigenvalue quick trick, read $\omega_n$ and $\zeta$ off the pendulum's $A$, build the one-step matrices for explicit and semi-implicit Euler, and find the largest stable time step by bisection. The demo draws a **root locus** (where the eigenvalues go as mass varies from 0.2 to 5 kg) and plots each integrator's spectral radius against $\Delta t$.
+
+<Build />
+
+<Callout title="Month 1 checkpoint">
+
+You can now (1) write a forward model as matrices, (2) invert it, (3) fit it to data, and (4) read natural frequency, damping and numerical stability off its eigenvalues. That's the linear-algebra half of most self-modeling papers. Next month adds the calculus and oscillator physics behind those eigenvalues.
+
+</Callout>

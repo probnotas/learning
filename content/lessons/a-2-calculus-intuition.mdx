@@ -1,0 +1,140 @@
+---
+title: "Derivatives from data — velocity and acceleration from an encoder"
+topic: A2
+month: 2
+order: 5
+status: full
+hours: 6
+summary: "Calculus as a tool for robots that only measure position. Build finite differences, measure their error, and see what an encoder does to an acceleration estimate."
+---
+
+## Why this matters
+
+Your pendulum's encoder reports one number, the angle. Your self-model, $I\ddot\theta_a = k(\theta_m - \theta_a) - mgL\sin\theta_a - c\dot\theta_a$, is written in **velocities and accelerations**. Everything between the encoder and the model is calculus: derivatives turn positions into rates, and the dynamics are a statement about second derivatives. Done carelessly, differentiation is also the biggest single source of noise in a learned forward model: a 4096-count encoder differentiated twice at 500 Hz gives accelerations that are ~100× noisier than the signal. This lesson builds intuition with 3Blue1Brown first, as the curriculum asks, because Feynman's oscillator chapters assume you're comfortable with $d/dt$, $d^2/dt^2$ and $e^x$.
+
+## Watch / Read
+
+<Watch id="v1" title="Calculus Ch 1 · The essence of calculus" youtube="WUvTyaaNkzM" minutes={17} />
+
+<Watch id="v2" title="Calculus Ch 2 · The paradox of the derivative" youtube="9vKqVkMQHKk" minutes={17}>
+"Instantaneous rate of change" is a limit of finite differences. You'll implement those finite differences in the build.
+</Watch>
+
+<Watch id="v3" title="Calculus Ch 3 · Derivative formulas through geometry" youtube="S0_qX4VJhMQ" minutes={18} />
+
+<Watch id="v4" title="Calculus Ch 4 · Visualizing the chain rule and product rule" youtube="YG15m2VwSjA" minutes={16} />
+
+<Watch id="v5" title="Calculus Ch 5 · What's so special about Euler's number e?" youtube="m2MIpDrF7Es" minutes={13}>
+$\frac{d}{dt}e^{at} = a\,e^{at}$. Every damped oscillation you'll meet is built on this.
+</Watch>
+
+<Watch id="v6" title="Calculus Ch 10 · Higher order derivatives" youtube="BLkz5LGWihw" minutes={6}>
+Second derivative = acceleration = what Newton's law is about.
+</Watch>
+
+<Read id="r1" title="ROB 101 textbook · §11.3 The concept of a derivative and its numerical approximation" href="https://grizzle.robotics.umich.edu/files/ROB_101_Textbook_W_23_Grizzle_linked_to_GitHub.pdf" where="§11.3 (p. 236), Winter 2023 PDF. A short, computational take on derivatives that matches this lesson's build.">
+Optional bridge back to Month 1: the same textbook treats derivatives numerically.
+</Read>
+
+## Core ideas
+
+- **A derivative is a rate: "how much does the output move per unit of input, right here?"** $\dot\theta$ is radians per second; $\ddot\theta$ is radians per second, per second.
+- **It's the limit of finite differences.** $\dot\theta(t) \approx \frac{\theta(t+h) - \theta(t)}{h}$, which gets better as $h \to 0$, until floating point and sensor noise bite.
+- **Central differences are much better than forward ones.** Forward error shrinks like $h$; central error like $h^2$. Halve the step: forward error halves, central error quarters.
+- **Derivative rules are geometry.** $\frac{d}{dt}\sin t = \cos t$; $\frac{d}{dt}t^2 = 2t$. The product rule and chain rule let you differentiate anything built from those.
+- **Chain rule = rates multiply.** $\frac{d}{dt}\sin(\theta(t)) = \cos\theta\cdot\dot\theta$. The gravity torque changes at a rate set by both the geometry and how fast the arm moves.
+- **$e^{at}$ is the function whose rate is proportional to itself.** That's why decay, growth, and (with $a$ complex) oscillation all look like exponentials.
+- **Newton's law constrains the second derivative.** State = position and velocity; the dynamics tell you acceleration; integrate twice to move forward in time.
+- **Differentiation amplifies noise.** Error from a sensor of resolution $\epsilon$ scales like $\epsilon/h$ for velocity and $\epsilon/h^2$ for acceleration. Smoothing reduces noise but adds **lag**.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="A sinusoid satisfies the oscillator equation">
+
+For $\theta(t) = 0.3\sin(3t)$, compute $\dot\theta$ and $\ddot\theta$. Express $\ddot\theta$ in terms of $\theta$. What equation does this sinusoid satisfy?
+
+<Solution>
+
+$\dot\theta = 0.9\cos 3t$, $\ddot\theta = -2.7\sin 3t = -9\,\theta$.
+So $\ddot\theta + 9\theta = 0$: the harmonic oscillator equation with $\omega^2 = 9$. Next lesson runs this in reverse: start from $\ddot\theta = -\omega^2\theta$ and find that sinusoids are the solutions.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="Forward vs central">
+
+Estimate $\frac{d}{dt}\sin t$ at $t = 0.5$ with $h = 0.1$ using a forward difference and a central difference. Compare to $\cos 0.5 = 0.877583$.
+
+<Solution>
+
+Forward: $(\sin 0.6 - \sin 0.5)/0.1 = (0.564642 - 0.479426)/0.1 = 0.852161$, error $\approx -0.0254$.
+Central: $(\sin 0.6 - \sin 0.4)/0.2 = (0.564642 - 0.389418)/0.2 = 0.876121$, error $\approx -0.00146$.
+Central is about 17× more accurate at the same $h$ and the same cost (two function values).
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="compute" title="Chain rule on the gravity torque">
+
+The gravity torque is $\tau_g = -mgL\sin\theta(t)$. Find $\dot\tau_g$. At $\theta = 0.3$ rad, $\dot\theta = 2$ rad/s, $m = L = 1$, how fast is the torque changing?
+
+<Solution>
+
+$\dot\tau_g = -mgL\cos\theta\cdot\dot\theta = -9.81\cdot\cos(0.3)\cdot 2 = -9.81\cdot0.9553\cdot2 \approx -18.7$ N·m/s.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="derive" title="Damping removes energy">
+
+With the motor held still at $\theta_m$, the compliant pendulum's energy is $E = \tfrac12 I\dot\theta^2 + mgL(1 - \cos\theta) + \tfrac12 k(\theta - \theta_m)^2$. Use the product and chain rules plus the equation of motion to show $\dot E = -c\,\dot\theta^2$.
+
+<Solution>
+
+$\dot E = I\dot\theta\ddot\theta + mgL\sin\theta\,\dot\theta + k(\theta - \theta_m)\dot\theta = \dot\theta\left[I\ddot\theta + mgL\sin\theta + k(\theta - \theta_m)\right]$.
+The equation of motion says the bracket equals $-c\dot\theta$, so $\dot E = -c\dot\theta^2 \le 0$. Energy only ever leaves, at a rate proportional to speed squared. When the motor *moves*, it does work on the spring, and that's how a drive pumps energy in at resonance.
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="compute" title="Exponential decay">
+
+The swing envelope of the lightly damped pendulum decays like $e^{-0.05t}$. What's its half-life? After 60 s, what fraction remains?
+
+<Solution>
+
+$e^{-0.05 t_{1/2}} = 1/2 \Rightarrow t_{1/2} = \ln 2/0.05 \approx 13.9$ s.
+After 60 s: $e^{-3} \approx 0.05$, so 5% remains. "Wait for steady state" means a minute or more at these settings.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="estimate" title="What an encoder does to your derivatives">
+
+A 4096-count/rev encoder has resolution $\epsilon = 2\pi/4096 \approx 1.53\times10^{-3}$ rad. At 500 Hz ($h = 0.002$ s), estimate the worst-case error from one count of quantization in (a) a central-difference velocity, (b) a second-difference acceleration. Compare to the true amplitudes for a $0.3\sin 3t$ swing.
+
+<Solution>
+
+(a) $\epsilon/(2h) \approx 0.38$ rad/s, versus a true peak velocity of 0.9 rad/s: about 40%.
+(b) $\epsilon/h^2 \approx 383$ rad/s², versus a true peak acceleration of 2.7 rad/s²: roughly **140×** the signal.
+Velocity is usable with smoothing; raw double-differenced acceleration is not. The build shows both.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="concept" title="Smoothing costs time">
+
+A trailing moving average over the last $N$ samples at sample period $h$ delays a slowly varying signal by about how much? Why does that matter for a self-model used for fault detection?
+
+<Solution>
+
+The average is centered on the middle of the window, so it lags by about $(N-1)h/2$. With $N = 25$ and $h = 2$ ms, that's 24 ms. For a 3 rad/s swing that's a phase lag of $3\times0.024 = 0.072$ rad, about 4°. A detector that compares a lagged velocity against an un-lagged model prediction sees a residual that has nothing to do with the body. Match the filtering on both sides, or use a zero-phase filter offline.
+
+</Solution>
+</Problem>
+
+## Build
+
+Implement forward, central and second differences, measure their error versus step size, simulate an encoder, and smooth with a trailing moving average. The demo plots error vs $h$ on log-log axes (the slopes are the method orders) and recovers velocity from a quantized 0.3-rad swing.
+
+<Build />

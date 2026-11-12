@@ -1,0 +1,157 @@
+---
+title: "Resonance, transients, and the mass bump"
+topic: B1
+month: 2
+order: 8
+status: full
+hours: 8
+summary: "Feynman chapters 23–25. Resonance curves, Q, transients and superposition, ending in a quantitative account of why an amplitude-based mass-bump detector can score far below chance."
+---
+
+## Why this matters
+
+This is the lesson where AUC = 0.11 stops being mysterious. A heavier arm moves the resonance from $\omega_n = 4.45$ to $4.06$ rad/s *and* lowers the gain $k/I$. Whether the steady-state amplitude goes **up or down** after the bump depends on where the drive frequency sits: in the undamped limit, amplitude grows only for drive frequencies between $\sqrt{g/L} \approx 3.13$ rad/s and a point between the two resonances, and shrinks everywhere else. A detector that assumes "bump means amplitude increases" is wrong-signed for most frequencies, so its AUC lands well below 0.5. On top of that, the pendulum is so lightly damped that a 2-second window after the bump measures a *transient* (ringing at the new $\omega_n$ beating against the drive), not a steady state. Feynman's chapters 23–25 give you every piece. The build reassembles them into the experiment.
+
+## Watch / Read
+
+<Read id="r1" title="Feynman Lectures Vol. I, Ch. 23 · Resonance" href="https://www.feynmanlectures.caltech.edu/I_23.html" where="23-1 Complex numbers and harmonic motion, 23-2 The forced oscillator with damping (the key section), 23-3 Electrical resonance, 23-4 Resonance in nature. Spend most of your time on 23-2 and its resonance-curve figure.">
+Map his $m, \gamma, \omega_0$ onto your $I$, $c/I$, $\sqrt{(k + mgL)/I}$ as you read.
+</Read>
+
+<Read id="r2" title="Feynman Lectures Vol. I, Ch. 24 · Transients" href="https://www.feynmanlectures.caltech.edu/I_24.html" where="24-1 The energy of an oscillator, 24-2 Damped oscillations, 24-3 Electrical transients. Focus on 24-1 (Q as energy stored over energy lost per radian) and 24-2.">
+This is the chapter that explains why "steady state" takes a minute at your damping.
+</Read>
+
+<Read id="r3" title="Feynman Lectures Vol. I, Ch. 25 · Linear Systems and Review" href="https://www.feynmanlectures.caltech.edu/I_25.html" where="25-1 Linear differential equations, 25-2 Superposition of solutions, 25-3 Oscillations in linear systems, 25-4 Analogs in physics. Skim 25-5 on impedances.">
+Superposition is why a multi-sine drive identifies the system at several frequencies at once (the least-squares lesson used this).
+</Read>
+
+## Core ideas
+
+- **The resonance curve is $|H(i\omega)|$.** It peaks near $\omega_0$. Its height is set by damping, and its width (the half-power bandwidth) is $\gamma = c/I$.
+- **$Q = \omega_0/\gamma$ measures sharpness.** It's also roughly the number of radians of oscillation it takes to lose $1/e$ of the energy. Your pendulum: $Q \approx 44$, a very sharp peak.
+- **Phase sweeps from 0 to −180° through resonance**, and passes −90° exactly at $\omega_0$.
+- **Transients decay as $e^{-\gamma t/2}$.** After any disturbance (start-up, a mass bump), the response is steady state plus free ringing at the system's own frequency. They beat against each other until the ringing dies.
+- **Superposition: response to a sum of drives = sum of responses.** Only true for linear systems; your pendulum is linear only for small angles.
+- **The mass bump changes both the peak location and the gain.** $\omega_n^2 = k/I + g/L$ falls, and so does $k/I$. Where amplitude goes up versus down is a property of the drive frequency, not just of the bump.
+- **A measurement window must span whole periods.** At $\omega = 2$ rad/s one drive period is $\pi$ s, so "max − min over the last 2 s" misses part of the cycle and depends on phase, even with no body change at all.
+- **Amplitude-based detectors are frequency-dependent by construction.** They're informative but sign-ambiguous, which is how you get AUC ≪ 0.5. Direction-agnostic scores ($|\Delta|$) or model-based residuals fix the sign problem; waiting out the transient fixes the timing problem.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="Two definitions of Q">
+
+Defaults: $m = L = 1$, $k = 10$, $c = 0.1$. Compute $Q = \omega_0/\gamma$ with the gravity-inclusive $\omega_0$. Compare to $Q = \sqrt{k\,mL^2}/c$ (a formula that leaves gravity out). Which matches the actual peak sharpness?
+
+<Solution>
+
+$\gamma = c/I = 0.1$ s⁻¹ and $\omega_0 = 4.4508$, so $Q = 44.5$. The gravity-free formula gives $\sqrt{10}/0.1 = 31.6$.
+The gravity-inclusive one is right: $Q = \sqrt{\kappa I}/c$ with $\kappa = k + mgL$. Using the wrong stiffness underestimates the resonance's sharpness by about 30%.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="How wide is the peak, and how far does the bump move it?">
+
+The half-power bandwidth is $\Delta\omega \approx \gamma$. Compute it at the defaults, and compare it with how far the mass bump moves the resonance.
+
+<Solution>
+
+$\Delta\omega \approx 0.1$ rad/s. The bump moves $\omega_n$ from 4.451 to 4.059 rad/s, a shift of 0.39 rad/s, about **four bandwidths**. If you were driving on the old peak, after the bump you're far down its flank. That's why the response to a mass change is so dramatic near resonance and so frequency-dependent.
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="estimate" title="Settling time">
+
+Transients decay like $e^{-\gamma t/2}$. At the defaults, how long until a transient is below 2% of its initial size? What does this imply for "steady-state amplitude over the last 2 s" measured shortly after a bump?
+
+<Solution>
+
+$e^{-0.05t} = 0.02 \Rightarrow t = \ln 50/0.05 \approx 78$ s.
+A 2-second window started anywhere within about a minute of the bump measures the transient, not the new steady state. Its value depends on the phase of the motion at the instant of the bump, which is effectively random from trial to trial. That adds noise and bias to every amplitude-based score.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="derive" title="When does a heavier arm swing more?">
+
+Undamped, below both resonances, the steady amplitude is $\dfrac{(k/I)A}{\omega_0^2 - \omega^2}$ with $\omega_0^2 = k/I + g/L$. Let $I \to I' \gt I$. Show that the amplitude increases if and only if $\omega^2 \gt g/L$.
+
+<Solution>
+
+Increase iff $\dfrac{k/I'}{k/I' + g/L - \omega^2} \gt \dfrac{k/I}{k/I + g/L - \omega^2}$. Both denominators are positive below resonance, so cross-multiply and cancel $k$:
+$I(k/I + g/L - \omega^2) \gt I'(k/I' + g/L - \omega^2) \iff k + I(g/L - \omega^2) \gt k + I'(g/L - \omega^2) \iff (I - I')(g/L - \omega^2) \gt 0$.
+Since $I - I' \lt 0$, this holds iff $g/L - \omega^2 \lt 0$, i.e. $\omega \gt \sqrt{g/L} = 3.13$ rad/s.
+Above both resonances the same algebra shows the amplitude *always* decreases. So the bump raises the amplitude only in a band from $\sqrt{g/L}$ up to somewhere between the two resonances. A drive at 3 rad/s sits just below that band, so amplitude drops slightly.
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="compute" title="Before and after, with damping">
+
+Using $A\,|H(i\omega)|$ at the defaults ($c = 0.1$, $A = 0.3$), the amplitudes before → after a ×1.5 mass bump are, at $\omega = 2, 3, 4, 5, 6$ rad/s: 0.190 → 0.160, 0.277 → 0.267, 0.783 → 3.66, 0.575 → 0.234, 0.185 → 0.102. Verify one of them by hand. If drive frequencies were drawn uniformly from 1 to 8 rad/s, roughly what fraction would show an *increase*?
+
+<Solution>
+
+At $\omega = 4$ after the bump: $I = 1.5$, $\kappa = 24.715$. Denominator $= 24.715 - 24 + i(0.1)(4) = 0.715 + 0.4i$, magnitude $0.819$. Amplitude $= 0.3\times10/0.819 = 3.66$ rad (the linear model overshoots, but the direction is right).
+The increase band is roughly 3.13 to ~4.3 rad/s, about 1.2 rad/s out of 7, so **~17%** of frequencies. A detector betting on "increase" is wrong about 83% of the time, before noise and transients.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="compute" title="Beats after the bump">
+
+After the bump at a 3 rad/s drive, the free transient rings near the new $\omega_n \approx 4.06$ rad/s. What beat period do you expect in the arm's envelope? Compare it to a 2-s scoring window.
+
+<Solution>
+
+Beat angular frequency $= |4.06 - 3| = 1.06$ rad/s, so the beat period is $2\pi/1.06 \approx 5.9$ s. A 2-second window catches a third of a beat cycle, so the measured "amplitude" swings up or down depending on where in the beat it falls. Same bump, different window timing, different sign.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="concept" title="Reading an AUC of 0.11">
+
+An AUC of 0.11 means that 89% of the time, a randomly chosen *no-bump* trial scored higher than a randomly chosen *bump* trial. What does that tell you about the score? Why is "just flip the sign" a fragile fix, and what are two better ones?
+
+<Solution>
+
+The score carries strong information about the bump, but with the opposite sign to the one assumed. Your test conditions mostly had the amplitude *decreasing* after the bump.
+Flipping the sign gives 0.89 *only for that same distribution of drive frequencies*. Move the test set into the 3.1–4.3 rad/s band and the flipped detector collapses.
+Better: (1) a direction-agnostic score such as $|\Delta\text{amplitude}|$ or a two-sided test, and (2) a **model-based residual**: predict the response with the nominal self-model, score the prediction error (or the refitted $k/I$ from the least-squares lesson). Its sign doesn't depend on the drive frequency. Also wait out (or model) the transient instead of scoring a 2-s window right after the event.
+
+</Solution>
+</Problem>
+
+<Problem id="p8" kind="concept" title="Superposition, and its limits">
+
+Feynman 25-2: for a linear system, the response to $\theta_m = a_1\sin\omega_1 t + a_2\sin\omega_2 t$ is the sum of the individual responses. Why is that useful for system identification? Name a case where it fails for your pendulum.
+
+<Solution>
+
+One experiment with a multi-sine drive measures $H(i\omega)$ at several frequencies at once (read off each frequency's component), which makes identification much faster. That's the drive the least-squares lesson used.
+It fails when the arm swings large ($\sin\theta \neq \theta$): frequencies mix, harmonics appear, and the resonance shifts with amplitude. Near resonance at the defaults, the linear model predicts 6.7 rad, deep in the nonlinear regime, so superposition is not trustworthy there.
+
+</Solution>
+</Problem>
+
+## Build
+
+You'll measure amplitude from a time series, build a resonance curve by simulation, implement the naive before/after amplitude score, compute an AUC, and predict the sign of the amplitude change from linear theory. The demo uses the **full nonlinear** pendulum with encoder noise. Damping is raised to $c = 0.3$ so each run settles in ~30 s and the whole experiment runs in about a second.
+
+<Build />
+
+<Callout title="What to notice">
+
+The naive score's AUC comes out well below 0.5 (about 0.25 with these settings), while $|\text{score}|$ is well above it. The exact number depends on which drive frequencies are in your test set: weight it toward below-resonance frequencies and it heads toward 0.
+
+Now the two time-series plots. At 3 rad/s the bump shrinks the swing, as theory says. At 4.2 rad/s theory says the steady state *grows*, yet in the 2-second window right after the bump (t = 32–34 s) the swing **collapses**: the new free ringing starts out of phase with the forced response and cancels it, then the two beat for tens of seconds before the larger steady state emerges. So there are two independent ways to get the sign wrong: where the drive sits relative to the resonances, and when the window sits relative to the transient. A third problem adds noise even without a bump: below $\pi$ rad/s, a 2-second window is shorter than one drive period, so the measured "amplitude" depends on phase (look at the no-bump dots at the low-frequency end of the score plot). The build tests pin down all three.
+
+Ready to defend: *"The detector was informative but sign-ambiguous. The bump's steady-state effect on amplitude depends on drive frequency relative to $\sqrt{g/L}$ and the two resonances, my 2-s scoring window sat inside a transient that lasts tens of seconds at this damping, and at low drive frequencies it didn't even span one period."*
+
+</Callout>
+
+<ProjectLink id="compliant-pendulum">
+The playground is the interactive version of this lesson: sweep the drive frequency, press "Change the body mid-run", and watch it happen.
+</ProjectLink>

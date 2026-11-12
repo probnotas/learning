@@ -1,0 +1,129 @@
+---
+title: "Complex numbers — one number for amplitude and phase"
+topic: B1
+month: 2
+order: 7
+status: full
+hours: 6
+summary: "Feynman chapter 22. Complex exponentials turn the driven-pendulum ODE into algebra, and the resonance curve becomes |H(iω)|."
+---
+
+## Why this matters
+
+The curve you wanted the playground to draw, steady-state arm amplitude against drive frequency, has a closed form, and complex numbers are what make it easy. Write the motor as $\theta_m = \mathrm{Re}(A e^{i\omega t})$ and every derivative becomes multiplication by $i\omega$. The differential equation collapses to one line of algebra: $\Theta_a = H(i\omega)\,\Theta_m$ with $H(i\omega) = \dfrac{k}{(k + mgL) - I\omega^2 + ic\omega}$. One complex number per frequency holds both how big the arm swings ($|H|$) and how far it lags the motor ($\arg H$). The mass bump changes $H$, and you can now compute exactly how, at every drive frequency, without running a single simulation.
+
+## Watch / Read
+
+<Read id="r1" title="Feynman Lectures Vol. I, Ch. 22 · Algebra" href="https://www.feynmanlectures.caltech.edu/I_22.html" where="Skim 22-1 to 22-4 (building up numbers from counting). Read 22-5 Complex numbers and 22-6 Imaginary exponents carefully, including the table of powers of 10^(i/1024). About 45 minutes.">
+His construction of $e^{i\theta}$ by repeated multiplication is the clearest one written down. Don't skip the numerical table.
+</Read>
+
+<Watch id="v1" title="3Blue1Brown · e^(iπ) in 3.14 minutes, using dynamics" youtube="v0YEaeIClKY" minutes={4}>
+Euler's formula as motion: velocity always perpendicular to position means moving around a circle. It's the harmonic oscillator from last lesson, in one picture.
+</Watch>
+
+## Core ideas
+
+- **A complex number is a 2D vector with multiplication.** Multiplying by $re^{i\phi}$ scales by $r$ and rotates by $\phi$. Multiplying by $i$ rotates by 90°.
+- **Euler: $e^{i\theta} = \cos\theta + i\sin\theta$.** A point on the unit circle. $e^{i\omega t}$ goes around at angular speed $\omega$, the circular motion whose shadow is harmonic motion.
+- **Derivatives become multiplication.** $\frac{d}{dt}e^{i\omega t} = i\omega\,e^{i\omega t}$ and $\frac{d^2}{dt^2}e^{i\omega t} = -\omega^2 e^{i\omega t}$.
+- **Guess $\theta_a = \Theta e^{i\omega t}$ and the ODE becomes algebra:** $(-I\omega^2 + ic\omega + \kappa)\,\Theta = k\,\Theta_m$, with $\kappa = k + mgL$.
+- **$H(i\omega) = \Theta/\Theta_m$ is the transfer function.** $|H|$ = amplitude ratio (the resonance curve); $\arg H$ = phase (negative means the arm lags the motor).
+- **At resonance the real part vanishes:** $\kappa - I\omega^2 = 0$, so $H = k/(ic\omega_0)$, the phase is exactly −90°, and the height is set only by damping.
+- **Physical answer = real part at the end.** Linearity makes it legal to compute with $e^{i\omega t}$ and take $\mathrm{Re}$ (or $\mathrm{Im}$, for a sine drive) only once you're done.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="Arithmetic">
+
+Compute $(3 + 4i)(1 - 2i)$ and its magnitude. Check that $|zw| = |z||w|$.
+
+<Solution>
+
+$3 - 6i + 4i - 8i^2 = 11 - 2i$. $|11 - 2i| = \sqrt{125} = 11.18$.
+$|3 + 4i| = 5$ and $|1 - 2i| = \sqrt5$, product $5\sqrt5 = 11.18$ ✓.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="Polar form does the heavy lifting">
+
+Write $1 + i$ in polar form and compute $(1 + i)^8$ without expanding.
+
+<Solution>
+
+$1 + i = \sqrt2\,e^{i\pi/4}$. $(1+i)^8 = (\sqrt2)^8 e^{i2\pi} = 16$.
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="compute" title="Division">
+
+Compute $\dfrac{1}{3 + 4i}$. Then explain geometrically what dividing by $3 + 4i$ does to a vector.
+
+<Solution>
+
+$\dfrac{1}{3+4i}\cdot\dfrac{3 - 4i}{3 - 4i} = \dfrac{3 - 4i}{25} = 0.12 - 0.16i$.
+Dividing by $5e^{i\phi}$ (with $\phi = \operatorname{atan2}(4, 3) \approx 53°$) shrinks by 5 and rotates by $-53°$. That's why a transfer function's denominator shows up as *phase lag*.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="derive" title="Derive the pendulum's transfer function">
+
+Linearized: $I\ddot\theta_a + c\dot\theta_a + (k + mgL)\theta_a = k\theta_m$. Substitute $\theta_m = \Theta_m e^{i\omega t}$, $\theta_a = \Theta_a e^{i\omega t}$ and solve for $H = \Theta_a/\Theta_m$.
+
+<Solution>
+
+Derivatives bring down $i\omega$: $(-I\omega^2 + ic\omega + k + mgL)\Theta_a e^{i\omega t} = k\Theta_m e^{i\omega t}$. Cancel $e^{i\omega t}$:
+$$H(i\omega) = \frac{k}{(k + mgL) - I\omega^2 + ic\omega}.$$
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="compute" title="Off resonance">
+
+Defaults ($m = L = 1$, $k = 10$, $c = 0.1$), $A_{\text{drive}} = 0.3$ rad, $\omega = 3$ rad/s. Compute $|H|$, the arm amplitude, and the phase.
+
+<Solution>
+
+Denominator $= 19.81 - 9 + 0.3i = 10.81 + 0.3i$, magnitude $10.8142$.
+$|H| = 10/10.8142 = 0.9247$, amplitude $= 0.3\times0.9247 = 0.2774$ rad. Phase $= -\operatorname{atan2}(0.3, 10.81) = -0.0277$ rad ($-1.6°$): almost in step with the motor.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="compute" title="On resonance, and what the linear model can't tell you">
+
+Now drive at $\omega = \omega_0 = 4.4508$ rad/s. Compute $|H|$, the predicted amplitude, and the phase. Is the predicted amplitude physically believable?
+
+<Solution>
+
+Real part $= 19.81 - 19.81 = 0$, so $H = 10/(0.44508\,i)$: $|H| = 22.47$, phase $= -90°$.
+Predicted amplitude $= 0.3\times22.47 = 6.74$ rad, more than a full revolution. Not believable: long before that, $\sin\theta \neq \theta$, the stiffness softens, the resonance shifts, and the real arm (or its joint limits) saturates. The linear model is right about *where* resonance is and how sharp it is, and wrong about *how big* it gets. Remember that when you compare simulated and real amplitudes near resonance.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="concept" title="Phase as a resonance tracker">
+
+The phase crosses −90° exactly at $\omega_0$, whatever the damping. Sketch an idea for a self-model that tracks $\omega_0$ online using phase instead of amplitude. Why might it be more robust to the mass bump than an amplitude threshold?
+
+<Solution>
+
+Measure the phase between motor and arm at the current drive frequency (for example by correlating with $\sin$ and $\cos$ of the drive). If the phase is less negative than −90°, you're below resonance, so raise $\omega$; if more negative, lower it. A phase-locked loop that settles where phase = −90° *is* an estimate of $\omega_0$. A mass bump moves that lock point from 4.45 to 4.06 rad/s: one clean, monotone number that always moves the same direction for a heavier body. An amplitude threshold, by contrast, goes up or down depending on where you happen to be driving (next lesson).
+
+</Solution>
+</Problem>
+
+## Build
+
+Implement complex arithmetic, Euler's formula, the pendulum's transfer function and the steady-state response. The demo draws the resonance curve and phase curve before and after the mass bump, and checks the complex-number prediction against a time-domain simulation.
+
+<Build />
+
+<Callout title="What to notice">
+
+Look at the two amplitude curves near 3–5 rad/s. The heavy-body curve sits *below* the nominal one at 3 rad/s but *above* it near 4. The same mass bump makes the amplitude go down or up depending on the drive frequency. Next lesson turns that into the AUC = 0.11 explanation.
+
+</Callout>

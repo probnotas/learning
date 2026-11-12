@@ -1,0 +1,121 @@
+---
+title: "The harmonic oscillator"
+topic: B1
+month: 2
+order: 6
+status: full
+hours: 6
+requires: [a-2-calculus-intuition]
+summary: "Feynman chapter 21. Near the bottom of its swing, your compliant pendulum is a harmonic oscillator. Solve it exactly, then simulate it three ways and see which integrator tells the truth."
+---
+
+## Why this matters
+
+Linearize the compliant pendulum around $\theta_a = 0$ and you get $I\ddot\theta_a = -(k + mgL)\,\theta_a + k\,\theta_m - c\,\dot\theta_a$. Take away the motor and the damping and that's Feynman's harmonic oscillator, $m\ddot x = -kx$, with an effective stiffness $k + mgL$. Everything you care about downstream, including natural frequency, resonance, the mass bump's detuning, and the AUC = 0.11 result, is built on this one equation. Feynman explains *why* the solution is a sinusoid and why its frequency doesn't depend on amplitude. The build makes you face a practical question too: your simulator is the ground truth for your self-model's training data, so does it conserve energy, or is it quietly pumping some in?
+
+## Watch / Read
+
+<Read id="r1" title="Feynman Lectures Vol. I, Ch. 21 · The Harmonic Oscillator" href="https://www.feynmanlectures.caltech.edu/I_21.html" where="All five sections: 21-1 Linear differential equations, 21-2 The harmonic oscillator, 21-3 Harmonic motion and circular motion, 21-4 Initial conditions, 21-5 Forced oscillations. About 45–60 minutes of careful reading.">
+Read with a pencil. Redo his derivation in 21-2 yourself before checking it. Section 21-5 previews the resonance lesson.
+</Read>
+
+## Core ideas
+
+- **Restoring force proportional to displacement gives sinusoids.** $\ddot x = -\omega_0^2 x$ is solved by $x = A\cos(\omega_0 t + \phi)$, where $\omega_0 = \sqrt{k/m}$ (or $\sqrt{(k + mgL)/I}$ for your arm).
+- **Frequency doesn't depend on amplitude, as long as the system is linear.** Small and big swings take the same time. The real pendulum breaks this at large angles because $\sin\theta \neq \theta$.
+- **Harmonic motion is the shadow of circular motion.** A point going around a circle at angular speed $\omega_0$, projected onto a line. That picture becomes complex numbers next lesson.
+- **Initial conditions set amplitude and phase; the system sets frequency.** Two numbers ($x_0, v_0$) in, two numbers ($A, \phi$) out.
+- **Energy sloshes between kinetic and potential and the total is constant.** $E = \tfrac12 v^2 + \tfrac12\omega_0^2 x^2$ (per unit mass). That makes it a perfect check on a simulator.
+- **Linearity means you can add solutions.** Any two solutions sum to a solution. That's why a drive can be analysed one frequency at a time.
+- **Integrators differ in what they get wrong.** Explicit Euler gains energy every step; semi-implicit (symplectic) Euler keeps it bounded; RK4 is very accurate per step but still drifts slightly over very long runs.
+
+## Problem set
+
+<Problem id="p1" kind="compute" title="Frequency and period">
+
+The linearized arm has $I = 1$ kg·m² and effective stiffness $\kappa = k + mgL = 19.81$ N·m/rad. Find $\omega_0$, the frequency in Hz, and the period.
+
+<Solution>
+
+$\omega_0 = \sqrt{19.81} = 4.4508$ rad/s, $f = \omega_0/2\pi = 0.7084$ Hz, $T = 1/f = 1.4117$ s.
+
+</Solution>
+</Problem>
+
+<Problem id="p2" kind="compute" title="Initial conditions → amplitude and phase">
+
+With $\omega_0 = 4.4508$ rad/s, the arm starts at $\theta(0) = 0.1$ rad with $\dot\theta(0) = 0.5$ rad/s. Write $\theta(t) = A\cos(\omega_0 t + \phi)$ and find $A$ and $\phi$.
+
+<Solution>
+
+$\theta(0) = A\cos\phi = 0.1$ and $\dot\theta(0) = -A\omega_0\sin\phi = 0.5$, so $A\sin\phi = -0.5/4.4508 = -0.11234$.
+$A = \sqrt{0.1^2 + 0.11234^2} = 0.15040$ rad, $\phi = \operatorname{atan2}(-0.11234, 0.1) = -0.8434$ rad.
+
+</Solution>
+</Problem>
+
+<Problem id="p3" kind="compute" title="Energy as a cross-check">
+
+Compute the energy per unit inertia $E = \tfrac12\dot\theta^2 + \tfrac12\omega_0^2\theta^2$ for Problem 2's initial state. Use it to recover the amplitude without trigonometry.
+
+<Solution>
+
+$E = \tfrac12(0.25) + \tfrac12(19.81)(0.01) = 0.125 + 0.09905 = 0.22405$.
+At maximum swing $\dot\theta = 0$, so $\tfrac12\omega_0^2A^2 = E \Rightarrow A = \sqrt{2E}/\omega_0 = \sqrt{0.4481}/4.4508 = 0.15040$ rad ✓.
+
+</Solution>
+</Problem>
+
+<Problem id="p4" kind="compute" title="Feynman's forced oscillator, for your pendulum">
+
+Ignoring damping, the motor $\theta_m = A_d\cos\omega t$ drives $I\ddot\theta = -\kappa\theta + kA_d\cos\omega t$. Following 21-5, the steady state is $\theta = \frac{(k/I)A_d}{\omega_0^2 - \omega^2}\cos\omega t$. Evaluate the amplitude with $A_d = 0.3$, $k = 10$, $I = 1$, at $\omega = 3$ and at $\omega = 6$ rad/s. What happens to the sign?
+
+<Solution>
+
+$\omega = 3$: $3/(19.81 - 9) = 0.2775$ rad, in phase with the motor.
+$\omega = 6$: $3/(19.81 - 36) = -0.1853$, so amplitude 0.185 rad, **in antiphase**: the arm swings opposite to the motor.
+The sign flips as $\omega$ passes $\omega_0$. Damping turns this flip into a smooth 180° phase sweep (the resonance lesson).
+
+</Solution>
+</Problem>
+
+<Problem id="p5" kind="concept" title="Is amplitude independent of frequency?">
+
+Feynman says the free oscillator's frequency doesn't depend on amplitude. Your real pendulum, swinging to 1 rad, takes noticeably longer per cycle than at 0.1 rad. Which assumption broke? By roughly how much is the gravity-only pendulum's period longer at 1 rad?
+
+<Solution>
+
+Linearity: $\sin\theta \approx \theta$ fails at large angles. The restoring torque grows *less* than linearly, so the pendulum is "softer" at big swings and slower. For a gravity-only pendulum, $T \approx T_0(1 + \theta_0^2/16 + \dots)$, so at $\theta_0 = 1$ rad the period is about 6–7% longer. In a self-model, amplitude-dependent frequency is a classic source of extrapolation error when training data only contains small swings.
+
+</Solution>
+</Problem>
+
+<Problem id="p6" kind="derive" title="How explicit Euler gains energy">
+
+For $\ddot x = -\omega_0^2 x$, explicit Euler is $x' = x + h v$, $v' = v - h\omega_0^2 x$. Show that $\omega_0^2 x'^2 + v'^2 = (1 + h^2\omega_0^2)(\omega_0^2 x^2 + v^2)$. With $h = 0.01$ and $\omega_0^2 = 19.81$, how much has the energy grown after 10 s?
+
+<Solution>
+
+$\omega_0^2(x + hv)^2 + (v - h\omega_0^2x)^2 = \omega_0^2x^2 + 2h\omega_0^2xv + h^2\omega_0^2v^2 + v^2 - 2h\omega_0^2xv + h^2\omega_0^4x^2$
+$= (1 + h^2\omega_0^2)(\omega_0^2x^2 + v^2)$. The cross terms cancel.
+Per step: $\times 1.001981$. After 1000 steps: $1.001981^{1000} \approx e^{1.98} \approx 7.2\times$ the energy. The build tests this exact factor.
+
+</Solution>
+</Problem>
+
+<Problem id="p7" kind="concept" title="Which simulator would you train a self-model on?">
+
+You're generating training data for a learned forward model. Explicit Euler at $h = 0.01$, semi-implicit Euler at $h = 0.01$, or RK4 at $h = 0.01$? What goes wrong with the wrong choice?
+
+<Solution>
+
+Not explicit Euler: its "physics" includes free energy, so the learned model inherits a fictitious negative damping and will be confidently wrong about how fast oscillations decay. That's exactly the quantity a resonance-based detector depends on. Semi-implicit Euler gets the energy behaviour right (bounded, no drift) and is cheap; it's the standard in robotics simulators. RK4 is the most accurate per step and fine at this $h$. Whatever you pick, **validate the simulator against an invariant** (energy, period) before trusting any model trained on its output.
+
+</Solution>
+</Problem>
+
+## Build
+
+Implement the exact solution, the energy, three integrators (explicit Euler, semi-implicit Euler, RK4), and a period estimator. The demo uses a deliberately coarse $\Delta t = 0.05$ s so the differences jump out: explicit Euler spirals outward, semi-implicit stays on the circle, RK4 hugs the exact curve.
+
+<Build />

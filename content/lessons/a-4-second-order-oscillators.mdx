@@ -1,0 +1,43 @@
+---
+title: "Second-order linear ODEs — damped and driven oscillators"
+topic: A4
+month: 4
+order: 12
+status: stub
+hours: 12
+summary: "18.03 Unit II. The full theory of the equation your pendulum obeys: characteristic roots, damping regimes, exponential response, gain and phase, practical resonance."
+---
+
+## Why this matters
+
+This is the formal version of everything Feynman showed you. $I\ddot\theta + c\dot\theta + \kappa\theta = k\theta_m(t)$ is a constant-coefficient second-order linear ODE, and 18.03 Unit II solves it completely: characteristic roots (your eigenvalues), under-, critically and over-damped regimes, the exponential response formula (your transfer function), gain and phase lag, and *practical* resonance (the true peak, which sits slightly below $\omega_n$ when damping is non-zero). It's the month where resonance becomes visible in your own code, through the Compliant Pendulum Playground.
+
+## Watch / Read
+
+<Read id="r1" title="18.03SC · Modes and the characteristic equation" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/modes-and-the-characteristic-equation/" where="Unit II session. Lecture video, notes, and problems." />
+
+<Read id="r2" title="18.03SC · Damped harmonic oscillators" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/damped-harmonic-oscillators/" where="Under-, critically and over-damped cases." />
+
+<Read id="r3" title="18.03SC · Exponential response" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/exponential-response/" where="The exponential response formula: your transfer function, derived properly." />
+
+<Read id="r4" title="18.03SC · Gain and phase lag" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/gain-and-phase-lag/" where="Unit II session." />
+
+<Read id="r5" title="18.03SC · Frequency response and practical resonance" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/frequency-response-and-practical-resonance/" where="Why the amplitude peak sits at ω_r = ω_n·√(1 − 2ζ²), not at ω_n." />
+
+<Read id="r6" title="18.03SC · Pure resonance" href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/pages/unit-ii-second-order-constant-coefficient-linear-equations/pure-resonance/" where="Undamped driving at ω_n: amplitude grows linearly in time." />
+
+## Core ideas
+
+<NotDrafted section="Core ideas" />
+
+## Problem set
+
+<NotDrafted section="Problem set" />
+
+## Build
+
+<NotDrafted section="Build" />
+
+<ProjectLink id="compliant-pendulum">
+This month's build: the Compliant Pendulum Playground. Drive the arm, sweep frequency, bump the mass mid-run, and check every number against this unit's formulas (ω_n, ζ, practical resonance, gain and phase).
+</ProjectLink>
