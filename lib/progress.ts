@@ -13,6 +13,13 @@ export interface VideoTest {
   checked: boolean;
   passed: boolean;
   fromTranscript: boolean;
+  results?: (boolean | null)[]; // per question: true = got it right, false = last try was wrong, null = not tried
+}
+
+/** Per-question results, also for tests saved before per-question checking existed. */
+export function testResults(t: VideoTest): (boolean | null)[] {
+  if (t.results && t.results.length === t.questions.length) return t.results;
+  return t.questions.map((q, i) => (t.passed || (t.checked && t.picked[i] === q.answer) ? true : null));
 }
 
 export interface PaperDraft {

@@ -1,3 +1,4 @@
+import { NO_EMOJI } from "@/lib/tutor";
 import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock, stripThinking } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
       reasoning_effort: "medium",
       response_format: { type: "json_schema", json_schema: { name: "video_test", strict: true, schema: SCHEMA } },
       messages: [
-        { role: "system", content: `You write short comprehension checks for a self-paced course. ${LEARNER}` },
+        { role: "system", content: `You write short comprehension checks for a self-paced course. ${LEARNER} ${NO_EMOJI} Avoid em dashes; use commas, periods or colons.` },
         {
           role: "user",
           content: `${sourceBlock({ lessonTitle, videoTitle: videoTitle || undefined, transcript, context })}

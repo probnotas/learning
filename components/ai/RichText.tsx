@@ -22,9 +22,33 @@ function Inline({ text }: { text: string }) {
 
 /** Minimal Markdown for model output: paragraphs, bullet lists, headings-as-bold, inline math. */
 export function RichText({ text, className = "" }: { text: string; className?: string }) {
-  const blocks = text.replace(/\r/g, "").split(/\n{2,}/);
+  // Pull out fenced code and $$display math$$ first; everything else is paragraphs and lists.
+  const segments = text.replace(/\r/g, "").split(/(```[\w+-]*\n[\s\S]*?(?:```|$)|\$\$[\s\S]+?\$\$)/g);
   return (
     <div className={`space-y-2.5 ${className}`}>
+      {segments.map((seg, k) => {
+        if (seg.startsWith("```")) {
+          const body = seg.replace(/^```[\w+-]*\n/, "").replace(/```$/, "").replace(/\n$/, "");
+          return (
+            <pre key={k} className="overflow-x-auto rounded-xl bg-black/30 p-3 font-mono text-[12.5px] leading-relaxed text-ink-100">
+              <code>{body}</code>
+            </pre>
+          );
+        }
+        if (seg.startsWith("$$") && seg.endsWith("$$") && seg.length > 4) {
+          const html = katex.renderToString(seg.slice(2, -2).trim(), { throwOnError: false, strict: "ignore", displayMode: true });
+          return <div key={k} className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: html }} />;
+        }
+        return <Blocks key={k} text={seg} />;
+      })}
+    </div>
+  );
+}
+
+function Blocks({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/).filter((b) => b.trim());
+  return (
+    <>
       {blocks.map((block, i) => {
         const lines = block.split("\n").filter((l) => l.trim());
         if (lines.length && lines.every((l) => /^\s*([-*•]|\d+\.)\s+/.test(l))) {
@@ -49,6 +73,6 @@ export function RichText({ text, className = "" }: { text: string; className?: s
           </p>
         );
       })}
-    </div>
+    </>
   );
 }

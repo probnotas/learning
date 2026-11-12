@@ -1,4 +1,5 @@
 import type Groq from "groq-sdk";
+import { TUTOR_PROMPT } from "@/lib/tutor";
 import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
@@ -21,16 +22,20 @@ export async function POST(req: Request) {
   const transcript = clip(body.transcript, LIMITS.transcript);
   const context = clip(body.context, LIMITS.context);
 
-  const system = `You are a tutor sitting next to the learner while they watch and study. ${LEARNER}
+  const system = `${TUTOR_PROMPT}
 
-Answer their questions using the material below. When the transcript covers it, ground your answer in what the video says (quote briefly when useful) and say roughly where in the video it comes up if you can tell. When you go beyond the material, say so. Be concise: a few short paragraphs at most, with inline LaTeX in $...$ for math. If they ask you to just give the answer to a practice question, help them get there with a hint first.
+# The student and their project
+${LEARNER} You already know their project, so don't ask what they're building: anchor to it.
+
+# Where you are
+You're sitting next to them while they watch and study the lesson below. When the transcript covers their question, ground your answer in what the video says (quote briefly when useful) and say roughly where in the video it comes up if you can tell. When you go beyond the material, say so. If they ask for the answer to a practice or test question, follow the rule above: help them get there, don't hand it over.
 
 ${sourceBlock({ lessonTitle, videoTitle, transcript, context })}`;
 
   try {
     const stream = await getClient().chat.completions.create({
       model: MODEL,
-      max_completion_tokens: 4000,
+      max_completion_tokens: 6000,
       reasoning_effort: "low",
       stream: true,
       messages: [{ role: "system", content: system }, ...history],

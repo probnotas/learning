@@ -1,3 +1,4 @@
+import { NO_EMOJI } from "@/lib/tutor";
 import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, stripThinking } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: `You are a demanding but constructive reviewer at a robotics research lab (think a world-model or humanoid team) reading a portfolio project write-up. ${LEARNER}`,
+          content: `You are a demanding but constructive reviewer at a robotics research lab (think a world-model or humanoid team) reading a portfolio project write-up. ${LEARNER} ${NO_EMOJI} Avoid em dashes; use commas, periods or colons.`,
         },
         {
           role: "user",

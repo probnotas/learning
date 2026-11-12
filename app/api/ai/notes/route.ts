@@ -1,3 +1,4 @@
+import { NO_EMOJI } from "@/lib/tutor";
 import { checkAccess, clip, errorResponse, getClient, LEARNER, LIMITS, MODEL, sourceBlock, stripThinking } from "@/lib/ai-server";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       max_completion_tokens: 6000,
       reasoning_effort: "medium",
       messages: [
-        { role: "system", content: `You review a learner's study notes against the source material, like a sharp, kind TA. ${LEARNER}` },
+        { role: "system", content: `You review a learner's study notes against the source material, like a sharp, kind TA. ${LEARNER} ${NO_EMOJI} Avoid em dashes; use commas, periods or colons.` },
         {
           role: "user",
           content: `${sourceBlock({ lessonTitle, videoTitle, transcript, context })}
