@@ -27,6 +27,11 @@ export default async function ItemPage({ params }: { params: { lessonId: string;
     source,
     options: {
       parseFrontmatter: true,
+      // next-mdx-remote 6 strips all JS expressions by default. Lesson files are our own
+      // and use simple literal props (minutes={10}, start={90}), so allow expressions but
+      // keep the "dangerous JS" filter (no eval, imports, globals) switched on.
+      blockJS: false,
+      blockDangerousJS: true,
       mdxOptions: {
         remarkPlugins: [remarkGfm, remarkMath],
         rehypePlugins: [[rehypeKatex, { throwOnError: false, strict: "ignore" }]],
