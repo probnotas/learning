@@ -6,7 +6,7 @@
    "ink-950" is always the page background and "ink-100" the strongest text. */
 :root {
   color-scheme: light;
-  --ink-950: 247 248 250;
+  --ink-950: 240 239 234;
   --ink-900: 255 255 255;
   --ink-850: 241 243 246;
   --ink-800: 232 235 240;
@@ -98,4 +98,43 @@ body {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.25rem 0;
+}
+
+/* The lesson "stage" card: always a deep green surface, whatever the page theme. */
+.stage {
+  color-scheme: dark;
+  --ink-950: 4 44 35;
+  --ink-900: 10 56 45;
+  --ink-850: 14 64 52;
+  --ink-800: 20 74 60;
+  --ink-700: 34 96 79;
+  --ink-600: 60 124 105;
+  --ink-400: 150 192 177;
+  --ink-300: 192 222 210;
+  --ink-200: 226 241 234;
+  --ink-100: 246 252 249;
+  --accent: 190 242 100;
+  --accent-dim: 101 163 13;
+  --good: 74 222 128;
+  --warn: 250 204 21;
+  --bad: 252 129 129;
+  background: rgb(var(--ink-950));
+  color: rgb(var(--ink-200));
+}
+
+/* Frosted glass panels on the world map. */
+.glass {
+  background: rgba(24, 28, 34, 0.62);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+@keyframes beam {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+@keyframes ping-soft {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
 }

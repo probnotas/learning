@@ -45,7 +45,7 @@ export function NotesView() {
     <div className="space-y-10">
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="font-serif text-3xl text-ink-100">Notebook</h1>
+          <h2 className="text-lg font-semibold text-ink-100">Cross-lesson notebook</h2>
           <button onClick={exportAll} className="rounded-md border border-ink-700 px-3 py-1.5 font-sans text-sm text-ink-300 hover:border-ink-400">
             Export all notes (.md)
           </button>

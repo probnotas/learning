@@ -1,5 +1,5 @@
-import { CoursePage } from "@/components/CoursePage";
+import { World } from "@/components/world/World";
 
 export default function Home() {
-  return <CoursePage />;
+  return <World />;
 }

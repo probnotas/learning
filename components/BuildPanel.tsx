@@ -68,7 +68,7 @@ export function BuildPanel({ lessonId, files }: { lessonId: string; files: Build
         <Editor
           height="420px"
           defaultLanguage="javascript"
-          theme={typeof document !== "undefined" && document.documentElement.dataset.theme === "light" ? "vs" : "vs-dark"}
+          theme="vs-dark"
           value={code}
           onChange={onChange}
           onMount={(editor, monaco) => {

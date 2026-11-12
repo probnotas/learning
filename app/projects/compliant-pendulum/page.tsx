@@ -1,3 +1,4 @@
+import { TopBar } from "@/components/Chrome";
 import fs from "node:fs";
 import path from "node:path";
 import Link from "next/link";
@@ -10,9 +11,9 @@ export default function CompliantPendulumPage() {
   const lessons = listLessons().filter((l) => project.lessons.includes(l.id));
 
   return (
+    <>
+    <TopBar title="Compliant Pendulum Playground" />
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <p className="font-sans text-xs uppercase tracking-widest text-good">Project</p>
-      <h1 className="mt-1 font-serif text-3xl text-ink-100">{project.title}</h1>
       <p className="mt-2 max-w-3xl font-serif text-ink-300">{project.summary}</p>
 
       <div className="mt-4 rounded-md border border-ink-800 bg-ink-900 p-4 font-mono text-sm text-ink-200">
@@ -51,5 +52,6 @@ export default function CompliantPendulumPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

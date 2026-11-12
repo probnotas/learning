@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { IndexProvider } from "@/components/IndexProvider";
-import { Nav } from "@/components/Nav";
 import { loadIndex } from "@/lib/lessons";
 
 export const metadata: Metadata = {
@@ -27,7 +26,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-ink-950">
         <IndexProvider value={index}>
-          <Nav />
           <main>{children}</main>
         </IndexProvider>
       </body>

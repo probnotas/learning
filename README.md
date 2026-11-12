@@ -1,6 +1,6 @@
 # learnlab
 
-A local-first, Khan Academy-style course built from [`CURRICULUM.md`](CURRICULUM.md). Units come from the curriculum's topics. Each lesson is a short sequence of mini-items: a "why this matters" article, videos, readings, a key-ideas article, an auto-graded **practice** set, and a coded **build**. You pass a lesson only when every item is done, **every practice question is answered correctly**, and every build test passes.
+A local-first course built from [`CURRICULUM.md`](CURRICULUM.md). Units come from the curriculum's topics and live as buildings on a campus map. Each lesson is a short sequence of mini-items: a "why this matters" article, videos, readings, a key-ideas article, an auto-graded **practice** set, and a coded **build**. You pass a lesson only when every item is done, **every practice question is answered correctly**, and every build test passes.
 
 No backend, no accounts, no database. Progress lives in your browser's `localStorage`.
 
@@ -26,12 +26,19 @@ Other scripts:
 
 ## What's in it
 
-- **Course page (`/`, `/unit/<topic>`)**: units on the left (the 6-month path first, then Year 2), and the selected unit on the right. It shows "Up next for you", unit mastery %, and every lesson with its items (▶ video, ≡ article, ↗ reading, ✎ practice, `</>` build). Locked lessons show a padlock; hover to see what's missing.
-- **Item player (`/lesson/<id>/<item>`)**: one mini-item per page, with the lesson's item list and progress on the left and a "Next" button at the end of each item. `/lesson/<id>` jumps to your first unfinished item. Each lesson has a "My notes" box in the sidebar.
+- **The campus (`/`, `/unit/<topic>`)**: the whole course is a world map (`public/world/campus.webp`). Every unit on the 6-month path is a building: A1 Robotics Lab, A2 The Ring, B1 Resonance Dome, A4 Oscillator Hall, C2 Control Center, F1 World Model Observatory, F2 Self-Model Institute, F3 Lagoon Monitoring Station. Year 2 is a planned district on the hillside.
+  - **Bottom bar:** every unit, in path order. Year 2 units are smaller, after the divider. A ring shows each unit's progress; ✓ means mastered.
+  - **Pick a unit** (bar or building): the camera flies into that building, and a light beam marks it. The ⌖ button or Esc zooms back out.
+  - **Left rail:** the lessons in that unit (✓ passed, 🔒 locked), plus Notebook, Projects and the theme toggle.
+  - **Right card:** the selected lesson (‹ 02 / 04 ›). Before you start it shows XP available, time and difficulty; once started it shows performance, items done and XP earned. Its button reads Start, Continue, Review, or Locked (with the reason and "Unlock anyway…").
+  - **Level pill (✦ L0):** total XP. XP is derived from your progress, 1000 XP per level.
+- **Lessons (`/lesson/<id>/<item>`)**: one big card plays the lesson's items in order (video, article, reading, practice, build), with story-style progress segments along the bottom (click to jump; ← → keys work too). The **Notes** panel sits beside it and saves as you type. `/lesson/<id>` jumps to your first unfinished item.
 - **Practice**: numeric answer boxes (fractions like `7/6`, `pi`, `sqrt()` and scientific notation are accepted; tolerances are set per question) and multiple choice. Wrong answers turn red and can be retried as many times as you need. After one wrong try you can open the worked solution. The practice set passes when every question is green.
 - **Build**: Monaco editor + Run. It passes when every test passes.
-- **Notes (`/notes`)** and **Projects (`/projects`)**: a cross-lesson notebook with Markdown export; the pendulum project and a build log.
-- **Theme**: dark by default, with a ☀/☾ toggle in the header (remembered).
+- **Notebook (`/notes`)** and **Projects (`/projects`)**: all your notes with Markdown export; the pendulum project and a build log.
+- **Theme**: dark by default, with a ☀/☾ toggle (remembered). The lesson card is always deep green.
+
+To move a unit to a different building, edit the coordinates in `lib/world.ts` (fractions of the image width and height).
 
 ### Content written so far
 
@@ -218,5 +225,6 @@ YouTube is only contacted when you press a video's play button (embeds use `yout
 - **Dependency-graph grammar is small.** The parser handles the constructs currently in CURRICULUM.md (chains, `+`, track letters, `(needs X)`, comment parentheticals). Other syntax is ignored, so keep the graph in this style.
 - **Several lessons per topic.** The 6-month path splits topics across months (A2 starts in Month 2 and continues in Month 3), so a topic can have several unit-level lessons. Files are named `[trackId]-[topicId]-[slug].mdx`. That's the requested `[trackId]-[topicId]` pattern with a unit suffix.
 - **3Blue1Brown's linear algebra series now has 16 chapters.** The 12 assigned across Month 1 are chapters 1–9 and 13–15. Chapters 10–12 and 16 are optional.
-- **Desktop-first.** It works in a narrow window, but it isn't designed for phones.
+- **Desktop-first.** The campus and lesson views are built for a laptop or desktop screen; on a phone the card and rails crowd the map.
+- **The campus image is 1672×941 px**, so zoomed-in buildings look a little soft. A larger render of the same image dropped in at `public/world/campus.webp` (same aspect ratio) sharpens it with no code changes.
 - **Progress from the previous version doesn't carry over.** Storage moved from `learnlab:v1` to `learnlab:v2` because lessons became item sequences.

@@ -4,7 +4,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { BuildPanel } from "@/components/BuildPanel";
-import { ItemPlayer } from "@/components/ItemPlayer";
+import { LessonStage } from "@/components/LessonStage";
 import { Callout, ProjectLink } from "@/components/mdx/Callout";
 import { Article, BuildItem, Choice, Q, Quiz, Read, Solution, Watch } from "@/components/mdx/Items";
 import { loadIndex, readBuildFiles, readLessonSource } from "@/lib/lessons";
@@ -56,8 +56,8 @@ export default async function ItemPage({ params }: { params: { lessonId: string;
   });
 
   return (
-    <ItemPlayer meta={meta} unit={unit} activeItem={params.itemId}>
+    <LessonStage meta={meta} unit={unit} activeItem={params.itemId}>
       {content}
-    </ItemPlayer>
+    </LessonStage>
   );
 }

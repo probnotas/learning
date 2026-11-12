@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { LessonRedirect } from "@/components/ItemPlayer";
+import { LessonRedirect } from "@/components/LessonStage";
 import { listLessons } from "@/lib/lessons";
 
 export const dynamicParams = false;

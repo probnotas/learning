@@ -34,7 +34,6 @@ export function ProjectsView() {
   return (
     <div className="space-y-12">
       <section>
-        <h1 className="font-serif text-3xl text-ink-100">Projects</h1>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {PROJECTS.map((p) => (
             <Link key={p.id} href={`/projects/${p.id}`} className="block rounded-lg border border-good/40 bg-ink-900 p-5 hover:border-good">
