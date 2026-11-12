@@ -181,7 +181,7 @@ The app is set up so a Vercel deploy is just the default Next.js build:
    - **Build Command:** `npm run build` (or leave the default)
    - **Install Command:** default (`npm install`)
    - **Output Directory:** default (leave empty; *don't* set `out` or `public`)
-   - **Node.js Version:** 18.x or newer (20.x recommended)
+   - **Node.js Version:** 22.x (pinned in `package.json`)
    - No environment variables are needed.
 3. Deploy. If a deploy fails, the error is in the **Build Logs**. Copy the first red error line and that's usually enough to fix it.
 
