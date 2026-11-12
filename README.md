@@ -237,7 +237,7 @@ After deploying:
 
 ## Privacy and network
 
-The app makes no tracking, analytics or font requests. Monaco, KaTeX and its fonts are served from your own machine. Fonts are system fonts.
+The app makes no tracking, analytics or font requests. Monaco, KaTeX and the fonts are served from your own site. Main titles use **Redaction 20** (SIL Open Font License, bundled via `@fontsource/redaction-20`); everything else uses system fonts.
 
 YouTube is only contacted when you press a video's play button (embeds use `youtube-nocookie.com`). External reading links open in a new tab when you click them. "Generate full lesson" calls the app's own local API route.
 

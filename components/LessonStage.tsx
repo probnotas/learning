@@ -79,7 +79,7 @@ export function LessonStage({
             <p className="text-xs font-semibold uppercase tracking-widest text-ink-400">
               Unit {unit.number} · {unit.title}
             </p>
-            <h1 className="truncate text-lg font-semibold text-ink-100">{meta.title}</h1>
+            <h1 className="truncate font-display text-lg font-semibold text-ink-100">{meta.title}</h1>
           </div>
           <ThemeToggle className="flex h-11 w-11 items-center justify-center rounded-full border border-ink-800 bg-ink-900 text-lg text-ink-200 shadow-sm hover:bg-ink-850" />
           <LevelPill light />
@@ -116,7 +116,7 @@ export function LessonStage({
                       </button>
                     </div>
                   )}
-                  {item && <h2 className="mb-6 text-center text-3xl font-bold tracking-tight text-ink-100 lg:text-4xl">{item.title}</h2>}
+                  {item && <h2 className="mb-6 text-center font-display text-3xl font-bold tracking-tight text-ink-100 lg:text-4xl">{item.title}</h2>}
                   {children}
                   {passed && !next && (
                     <div className="mt-8 rounded-2xl border-2 border-good bg-good/10 p-5 text-center">

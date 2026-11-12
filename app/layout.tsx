@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import "@fontsource/redaction-20/400.css";
+import "@fontsource/redaction-20/700.css";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { IndexProvider } from "@/components/IndexProvider";

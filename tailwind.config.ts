@@ -9,6 +9,8 @@ const config: Config = {
       fontFamily: {
         serif: ["Charter", "'Bitstream Charter'", "'Iowan Old Style'", "'Sitka Text'", "Cambria", "Georgia", "serif"],
         sans: ["system-ui", "-apple-system", "'Segoe UI'", "Roboto", "'Helvetica Neue'", "Arial", "sans-serif"],
+        // Redaction 20: only for main titles (font-display).
+        display: ["'Redaction 20'", "Charter", "Georgia", "serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "'Liberation Mono'", "monospace"],
       },
       colors: {

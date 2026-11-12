@@ -11,6 +11,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource/redaction-20": "^5.3.0",
     "@monaco-editor/react": "^4.7.0",
     "gray-matter": "^4.0.3",
     "groq-sdk": "^1.6.0",

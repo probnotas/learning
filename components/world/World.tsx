@@ -438,40 +438,40 @@ function UnitCard({
   const fmt = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <aside className="glass absolute right-6 top-1/2 w-[400px] max-w-[calc(100vw-3rem)] -translate-y-1/2 rounded-[28px] p-5">
+    <aside className="glass absolute right-6 top-1/2 flex h-[480px] w-[330px] max-w-[calc(100vw-3rem)] -translate-y-1/2 flex-col rounded-[26px] p-4">
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} disabled={i === 0} className="h-9 w-9 rounded-full text-lg text-white/80 hover:bg-white/10 disabled:opacity-30">
+        <button onClick={onPrev} disabled={i === 0} className="h-8 w-8 rounded-full text-lg text-white/80 hover:bg-white/10 disabled:opacity-30">
           ‹
         </button>
-        <span className="rounded-full bg-white/10 px-4 py-1.5 font-mono text-sm text-white/85">
+        <span className="rounded-full bg-white/10 px-3.5 py-1 font-mono text-xs text-white/85">
           {fmt(i + 1)} <span className="text-white/40">/</span> {fmt(count)}
         </span>
-        <button onClick={onNext} disabled={i >= count - 1} className="h-9 w-9 rounded-full text-lg text-white/80 hover:bg-white/10 disabled:opacity-30">
+        <button onClick={onNext} disabled={i >= count - 1} className="h-8 w-8 rounded-full text-lg text-white/80 hover:bg-white/10 disabled:opacity-30">
           ›
         </button>
       </div>
 
-      <div className="mt-5 flex flex-col items-center">
+      <div className="mt-4 flex shrink-0 flex-col items-center">
         <div
-          className="relative flex h-28 w-56 rotate-[-3deg] flex-col items-center justify-center rounded-2xl border-4 border-white/90 px-3 shadow-xl"
+          className="relative flex h-20 w-40 rotate-[-3deg] flex-col items-center justify-center rounded-2xl border-[3px] border-white/90 px-3 shadow-xl"
           style={{ background: `linear-gradient(145deg, ${site.color}, ${site.color}99 60%, #0b0f14)` }}
         >
           <span className="absolute -top-3 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-900 shadow">
             Unit {unit.number}
           </span>
-          <span className="text-5xl font-black tracking-tight text-white" style={{ WebkitTextStroke: "2px rgba(0,0,0,0.55)", textShadow: "0 4px 0 rgba(0,0,0,0.35)" }}>
+          <span className="text-4xl font-black tracking-tight text-white" style={{ WebkitTextStroke: "1.5px rgba(0,0,0,0.55)", textShadow: "0 3px 0 rgba(0,0,0,0.35)" }}>
             {unit.topic}
           </span>
         </div>
-        <p className="mt-3 text-xs text-white/55">{site.building}</p>
-        <h2 className="mt-1 text-center text-2xl font-semibold leading-snug">{unit.title}</h2>
-        <p className="mt-1 text-center text-sm text-white/60">
+        <p className="mt-2.5 truncate text-[11px] text-white/55">{site.building}</p>
+        <h2 className="mt-0.5 line-clamp-2 flex h-[3.1rem] items-center text-center text-lg font-semibold leading-tight">{unit.title}</h2>
+        <p className="mt-0.5 text-center text-xs text-white/60">
           {regular.length} lesson{regular.length === 1 ? "" : "s"}
           {capstone ? " + 🏆 portfolio project" : ""}
         </p>
       </div>
 
-      <dl className="mt-5 space-y-3 border-t border-white/10 pt-4 text-sm">
+      <dl className="mt-3 flex-1 space-y-2.5 overflow-hidden border-t border-white/10 pt-3 text-[13px]">
         {started || mastered ? (
           <>
             <Row label="Mastery">{mastered ? <span className="text-green-300">{mastery}% ✓</span> : `${mastery}%`}</Row>
@@ -504,32 +504,35 @@ function UnitCard({
       </dl>
 
       {lock.locked ? (
-        <div className="mt-5">
-          <div className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3.5 text-base text-white/70">🔒 Locked</div>
-          <ul className="mt-3 space-y-1 text-xs text-white/60">
-            {lock.reasons.map((r) => (
-              <li key={r}>• {r}</li>
-            ))}
-          </ul>
+        <div className="h-[92px] shrink-0">
+          <div className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3 text-sm text-white/70">🔒 Locked</div>
+          <p className="mt-2 line-clamp-1 text-[11px] text-white/60" title={lock.reasons.join(" ")}>
+            {lock.reasons[0]}
+            {lock.reasons.length > 1 ? ` (+${lock.reasons.length - 1} more)` : ""}
+          </p>
           <button
             onClick={() => {
               if (first && confirm("Skip the prerequisites? The point of this curriculum is to not skip.")) {
                 updateLesson(first.id, (x) => ({ ...x, override: true }), { activity: false });
               }
             }}
-            className="mt-2 text-xs text-white/45 underline hover:text-white/80"
+            className="mt-1 text-[11px] text-white/45 underline hover:text-white/80"
           >
             Unlock anyway…
           </button>
         </div>
       ) : (
+        <div className="flex h-[92px] shrink-0 items-end">
         <Link
           href={`/lesson/${(next ?? first)?.id ?? ""}`}
-          className="mt-5 block w-full rounded-full bg-white py-3.5 text-center text-base font-semibold text-neutral-900 shadow-lg hover:brightness-95"
+          className="block w-full rounded-full bg-white py-2.5 text-center text-sm font-semibold text-neutral-900 shadow-lg hover:brightness-95"
         >
           {mastered ? "Review" : started ? "Continue" : "Start"}
-          {!mastered && next && <span className="mt-0.5 block truncate px-6 text-xs font-normal text-neutral-500">{next.capstone ? "🏆 " : ""}{next.title}</span>}
+          <span className="mt-0.5 block truncate px-6 text-[11px] font-normal text-neutral-500">
+            {mastered ? "All lessons passed" : next ? `${next.capstone ? "🏆 " : ""}${next.title}` : "\u00a0"}
+          </span>
         </Link>
+        </div>
       )}
     </aside>
   );

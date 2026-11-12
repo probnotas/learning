@@ -57,7 +57,7 @@ export function TopBar({ title }: { title: string }) {
   return (
     <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 pt-8">
       <BackButton href="/" label="Back to the campus" />
-      <h1 className="flex-1 font-serif text-3xl text-ink-100">{title}</h1>
+      <h1 className="flex-1 font-display text-3xl text-ink-100">{title}</h1>
       <ThemeToggle className="flex h-11 w-11 items-center justify-center rounded-full border border-ink-800 bg-ink-900 text-lg text-ink-200 shadow-sm hover:bg-ink-850" />
       <LevelPill light />
     </div>
